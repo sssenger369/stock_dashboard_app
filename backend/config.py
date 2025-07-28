@@ -12,8 +12,9 @@ class Settings:
     DEBUG = os.getenv("DEBUG", "false").lower() == "true"
     
     # Data configuration  
-    DATA_DIRECTORY = os.getenv("DATA_DIRECTORY", r"C:\Users\sssen\Trading\OneDrive\Bhav copy Script")
+    DATA_DIRECTORY = os.getenv("DATA_DIRECTORY", "./data")
     DATA_FILENAME = os.getenv("DATA_FILENAME", "Final_Data.parquet")
+    ONEDRIVE_DATA_URL = os.getenv("ONEDRIVE_DATA_URL", "https://1drv.ms/f/c/293ffb2fff85f942/Ev-5RbKi7pZOh2ASHnJvIi0BDLDvyxAadywxt-TvngkY1w?e=Ornm21")
     
     @property
     def DATA_PATH(self):

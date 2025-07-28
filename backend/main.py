@@ -5,6 +5,8 @@ import os
 from datetime import date
 from functools import lru_cache
 import numpy as np # Import numpy for NaN check
+import requests
+from pathlib import Path
 from config import settings
 
 app = FastAPI(
@@ -22,9 +24,49 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def download_onedrive_data():
+    """Downloads data from OneDrive if local file doesn't exist."""
+    if settings.ONEDRIVE_DATA_URL and not os.path.exists(settings.DATA_PATH):
+        print(f"INFO: Downloading data from OneDrive...")
+        try:
+            # Create data directory if it doesn't exist
+            Path(settings.DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
+            
+            # For OneDrive share links, try to get direct download
+            onedrive_url = settings.ONEDRIVE_DATA_URL
+            print(f"INFO: Using OneDrive URL: {onedrive_url}")
+            
+            # Try direct download with various methods
+            response = requests.get(onedrive_url, stream=True, allow_redirects=True)
+            response.raise_for_status()
+            
+            # Save to local file
+            print(f"INFO: Saving downloaded data to {settings.DATA_PATH}")
+            with open(settings.DATA_PATH, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            
+            # Verify file was downloaded
+            if os.path.exists(settings.DATA_PATH) and os.path.getsize(settings.DATA_PATH) > 0:
+                file_size = os.path.getsize(settings.DATA_PATH) / (1024*1024)  # MB
+                print(f"INFO: Successfully downloaded data to {settings.DATA_PATH} ({file_size:.1f} MB)")
+                return True
+            else:
+                print(f"ERROR: File download failed or file is empty")
+                return False
+            
+        except Exception as e:
+            print(f"ERROR: Failed to download from OneDrive: {e}")
+            return False
+    return True
+
 @lru_cache(maxsize=1)
 def get_main_data():
     """Loads the main Parquet data once and caches it."""
+    # Try to download from OneDrive if needed
+    download_onedrive_data()
+    
     try:
         df = pd.read_parquet(settings.DATA_PATH)
         df['TIMESTAMP'] = pd.to_datetime(df['TIMESTAMP'])
