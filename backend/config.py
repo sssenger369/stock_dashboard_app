@@ -22,7 +22,7 @@ class Settings:
     # CORS configuration
     CORS_ORIGINS = os.getenv(
         "CORS_ORIGINS", 
-        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173"
+        "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,https://stock-dashboard-93bsuyrcd-sanjay-singhs-projects-933bcc33.vercel.app"
     ).split(",")
     
     # Z-Score configuration
