@@ -45,21 +45,39 @@ def ensure_data():
                 final_url = initial_response.url
                 print(f"🔄 Final URL after redirects: {final_url}")
                 
-                # If the content type suggests it's the file, use this response
+                # Check if this looks like actual file content
                 content_type = initial_response.headers.get('content-type', '')
-                if 'application/octet-stream' in content_type or 'parquet' in content_type or len(initial_response.content) > 1000000:
-                    print("✅ Got direct download response")
+                content_length = initial_response.headers.get('content-length', '0')
+                
+                print(f"📋 Content-Type: {content_type}")
+                print(f"📏 Content-Length: {content_length}")
+                
+                # For embed URLs, the initial response might be the file
+                if (('application/octet-stream' in content_type or 
+                     'binary' in content_type or
+                     int(content_length) > 10000000) and  # > 10MB suggests it's the file
+                    'text/html' not in content_type):
+                    print("✅ Got direct file download from embed URL")
                     response = initial_response
                 else:
-                    # Try adding download parameter
-                    if '?' in download_url:
-                        download_url_with_param = download_url + '&download=1'
-                    else:
-                        download_url_with_param = download_url + '?download=1'
-                    
+                    # Try adding download parameter for regular share URLs
+                    download_url_with_param = download_url + '?download=1'
                     print(f"🔄 Trying with download parameter: {download_url_with_param}")
                     response = session.get(download_url_with_param, stream=True, allow_redirects=True, timeout=300)
                     response.raise_for_status()
+                    
+                    # Check this response too
+                    new_content_type = response.headers.get('content-type', '')
+                    new_content_length = response.headers.get('content-length', '0')
+                    print(f"📋 New Content-Type: {new_content_type}")
+                    print(f"📏 New Content-Length: {new_content_length}")
+                
+                # Verify we're getting a reasonable file size
+                expected_size = int(response.headers.get('content-length', '0'))
+                if expected_size < 10000000:  # Less than 10MB is suspicious
+                    print(f"⚠️  Warning: Expected file size is only {expected_size/1024/1024:.1f} MB")
+                else:
+                    print(f"✅ Expected file size: {expected_size/1024/1024:.1f} MB")
                 
                 # Save the file
                 total_size = 0
@@ -76,9 +94,14 @@ def ensure_data():
                 
                 # Quick validation
                 import pandas as pd
-                test_df = pd.read_parquet(data_file, nrows=10)
-                print(f"📊 Validation: {test_df['SYMBOL'].nunique()} symbols detected")
-                return
+                try:
+                    # Use head() instead of nrows parameter for older pandas versions
+                    test_df = pd.read_parquet(data_file)
+                    print(f"📊 Validation: {test_df['SYMBOL'].nunique()} symbols detected from {len(test_df)} total records")
+                    return
+                except Exception as val_err:
+                    print(f"❌ Validation failed: {val_err}")
+                    raise val_err
                 
         except Exception as e:
             print(f"❌ OneDrive download failed: {e}")
