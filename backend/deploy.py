@@ -55,20 +55,45 @@ def ensure_data():
                     initial_response = session.get(download_url, allow_redirects=True)
                     initial_response.raise_for_status()
                     
-                    # Check if we got a virus scan warning page
-                    if "virus scan warning" in initial_response.text.lower() or "download anyway" in initial_response.text.lower():
+                    # Check if we got a virus scan warning page (for large files)
+                    if ("virus scan" in initial_response.text.lower() or 
+                        "download anyway" in initial_response.text.lower() or
+                        "too large" in initial_response.text.lower() or
+                        len(initial_response.content) < 1000000):  # Less than 1MB suggests HTML page
+                        
                         print("⚠️  Handling Google Drive virus scan warning...")
-                        # Look for the confirm parameter in the response
+                        # For large files, Google Drive requires a different approach
                         import re
-                        confirm_match = re.search(r'confirm=([^&]+)', initial_response.text)
-                        if confirm_match:
-                            confirm_code = confirm_match.group(1)
-                            download_url = f"https://drive.google.com/uc?export=download&confirm={confirm_code}&id={file_id}"
-                            print(f"🔄 Using confirmed download URL")
-                            response = session.get(download_url, stream=True, allow_redirects=True, timeout=300)
+                        
+                        # Try multiple methods to find the download confirmation
+                        confirm_patterns = [
+                            r'confirm=([a-zA-Z0-9_-]+)',
+                            r'"confirm","([^"]+)"',
+                            r'confirm&amp;uuid=([^&]+)',
+                            r'uuid=([a-zA-Z0-9_-]+)'
+                        ]
+                        
+                        confirm_code = None
+                        for pattern in confirm_patterns:
+                            match = re.search(pattern, initial_response.text)
+                            if match:
+                                confirm_code = match.group(1)
+                                print(f"✅ Found confirm code: {confirm_code[:10]}...")
+                                break
+                        
+                        if confirm_code:
+                            # Use the confirm code to get the actual download
+                            confirmed_url = f"https://drive.google.com/uc?export=download&confirm={confirm_code}&id={file_id}"
+                            print(f"🔄 Using confirmed download URL with code")
+                            response = session.get(confirmed_url, stream=True, allow_redirects=True, timeout=600)
                         else:
-                            response = initial_response
+                            print("❌ Could not find confirm code, trying alternative method...")
+                            # Alternative: use the direct download with a different approach
+                            alt_url = f"https://docs.google.com/uc?export=download&id={file_id}"
+                            print(f"🔄 Trying alternative Google Docs download URL")
+                            response = session.get(alt_url, stream=True, allow_redirects=True, timeout=600)
                     else:
+                        print("✅ Got direct download response")
                         response = initial_response
                 else:
                     # Non-Google Drive URL
