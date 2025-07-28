@@ -5,44 +5,38 @@ import os
 from datetime import date
 from functools import lru_cache
 import numpy as np # Import numpy for NaN check
+from config import settings
 
-app = FastAPI()
+app = FastAPI(
+    title="Stock Dashboard API",
+    description="FastAPI backend for Stock Market Dashboard with technical indicators",
+    version="1.0.0"
+)
 
 # --- CORS Configuration ---
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.CORS_ORIGINS + ["*"],  # Allow all origins for deployment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-DATA_DIRECTORY = r"C:\Users\sssen\Trading\OneDrive\Bhav copy Script"
-DATA_FILENAME = "Final_Data.parquet"
-DATA_PATH = os.path.join(DATA_DIRECTORY, DATA_FILENAME)
-
 @lru_cache(maxsize=1)
 def get_main_data():
     """Loads the main Parquet data once and caches it."""
     try:
-        df = pd.read_parquet(DATA_PATH)
+        df = pd.read_parquet(settings.DATA_PATH)
         df['TIMESTAMP'] = pd.to_datetime(df['TIMESTAMP'])
-        print(f"DEBUG: Data loaded successfully from {DATA_PATH}. Shape: {df.shape}")
+        print(f"DEBUG: Data loaded successfully from {settings.DATA_PATH}. Shape: {df.shape}")
         print(f"DEBUG: Columns: {df.columns.tolist()}")
         print(f"DEBUG: TIMESTAMP dtype after load: {df['TIMESTAMP'].dtype}")
         return df
     except FileNotFoundError:
-        print(f"ERROR: Parquet file not found at {DATA_PATH}")
+        print(f"ERROR: Parquet file not found at {settings.DATA_PATH}")
         raise HTTPException(status_code=500, detail="Data file not found on server. Please check DATA_PATH.")
     except Exception as e:
-        print(f"ERROR: Failed to load data from {DATA_PATH}: {e}")
+        print(f"ERROR: Failed to load data from {settings.DATA_PATH}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to load data from server: {e}")
 
 # Load data on application startup (and cache it)

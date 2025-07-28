@@ -16,8 +16,8 @@ function App() {
   const [dataDateRange, setDataDateRange] = useState({ min: null, max: null });
   const [fullDatasetRange, setFullDatasetRange] = useState({ min: null, max: null }); // Fixed dataset boundaries
 
-  // FastAPI backend URL - adjust if your backend runs on different port
-  const API_BASE_URL = 'http://127.0.0.1:8000';
+  // FastAPI backend URL - uses environment variable for production
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
   
   // Add data cache and loading state management
   const dataCache = useRef(new Map());
