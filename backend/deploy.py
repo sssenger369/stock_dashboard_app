@@ -49,51 +49,62 @@ def ensure_data():
                 session = requests.Session()
                 session.headers.update(headers)
                 
-                # For Google Drive, handle the virus scan warning for large files
+                # For Google Drive, handle large file downloads properly
                 if "drive.google.com" in download_url:
-                    print("🔄 Getting Google Drive download (may need to handle virus scan warning)...")
-                    initial_response = session.get(download_url, allow_redirects=True)
+                    print("🔄 Getting Google Drive download (handling large file properly)...")
+                    
+                    # Step 1: Get the initial response to check for virus scan warning
+                    initial_response = session.get(download_url, allow_redirects=False)
                     initial_response.raise_for_status()
                     
-                    # Check if we got a virus scan warning page (for large files)
-                    if ("virus scan" in initial_response.text.lower() or 
-                        "download anyway" in initial_response.text.lower() or
-                        "too large" in initial_response.text.lower() or
-                        len(initial_response.content) < 1000000):  # Less than 1MB suggests HTML page
+                    print(f"📋 Initial response status: {initial_response.status_code}")
+                    print(f"📏 Initial content length: {len(initial_response.content)}")
+                    
+                    # Check if we need to handle redirects or warnings
+                    if initial_response.status_code == 302 or 'Location' in initial_response.headers:
+                        # Follow redirect manually
+                        redirect_url = initial_response.headers.get('Location', download_url)
+                        print(f"🔄 Following redirect to: {redirect_url[:100]}...")
+                        response = session.get(redirect_url, stream=True, allow_redirects=True, timeout=600)
+                    elif len(initial_response.content) < 100000:  # Small response suggests HTML warning page
+                        print("⚠️  Got virus scan warning page, extracting download link...")
                         
-                        print("⚠️  Handling Google Drive virus scan warning...")
-                        # For large files, Google Drive requires a different approach
+                        # Look for the actual download link in the HTML
                         import re
+                        text = initial_response.text
                         
-                        # Try multiple methods to find the download confirmation
-                        confirm_patterns = [
-                            r'confirm=([a-zA-Z0-9_-]+)',
-                            r'"confirm","([^"]+)"',
-                            r'confirm&amp;uuid=([^&]+)',
-                            r'uuid=([a-zA-Z0-9_-]+)'
+                        # Multiple patterns to find the download URL
+                        download_patterns = [
+                            r'href="(/uc\?export=download[^"]+)"',
+                            r'"downloadUrl":"([^"]+)"',
+                            r'action="([^"]+uc\?export=download[^"]*)"',
+                            r'<a[^>]*href="([^"]*uc\?export=download[^"]*)"'
                         ]
                         
-                        confirm_code = None
-                        for pattern in confirm_patterns:
-                            match = re.search(pattern, initial_response.text)
-                            if match:
-                                confirm_code = match.group(1)
-                                print(f"✅ Found confirm code: {confirm_code[:10]}...")
+                        download_link = None
+                        for pattern in download_patterns:
+                            matches = re.findall(pattern, text)
+                            for match in matches:
+                                if 'export=download' in match:
+                                    if match.startswith('/'):
+                                        download_link = f"https://drive.google.com{match}"
+                                    else:
+                                        download_link = match.replace('\\u0026', '&')
+                                    print(f"✅ Found download link in HTML")
+                                    break
+                            if download_link:
                                 break
                         
-                        if confirm_code:
-                            # Use the confirm code to get the actual download
-                            confirmed_url = f"https://drive.google.com/uc?export=download&confirm={confirm_code}&id={file_id}"
-                            print(f"🔄 Using confirmed download URL with code")
-                            response = session.get(confirmed_url, stream=True, allow_redirects=True, timeout=600)
+                        if download_link:
+                            print(f"🔄 Using extracted download link")
+                            response = session.get(download_link, stream=True, allow_redirects=True, timeout=600)
                         else:
-                            print("❌ Could not find confirm code, trying alternative method...")
-                            # Alternative: use the direct download with a different approach
-                            alt_url = f"https://docs.google.com/uc?export=download&id={file_id}"
-                            print(f"🔄 Trying alternative Google Docs download URL")
-                            response = session.get(alt_url, stream=True, allow_redirects=True, timeout=600)
+                            print("❌ Could not extract download link, trying cookie-based approach...")
+                            # Try using the file ID with cookies
+                            cookie_url = f"https://drive.google.com/uc?id={file_id}&export=download&confirm=t"
+                            response = session.get(cookie_url, stream=True, allow_redirects=True, timeout=600)
                     else:
-                        print("✅ Got direct download response")
+                        print("✅ Got direct file response")
                         response = initial_response
                 else:
                     # Non-Google Drive URL
