@@ -24,18 +24,42 @@ def ensure_data():
             if settings.ONEDRIVE_DATA_URL:
                 print("🔄 Downloading full dataset from OneDrive...")
                 
-                # Convert OneDrive share URL to direct download URL
+                # For OneDrive direct file links, try multiple approaches
                 download_url = settings.ONEDRIVE_DATA_URL
-                if "1drv.ms/u/" in download_url:
-                    download_url = download_url.replace("?e=", "&download=1&e=")
+                print(f"📁 Using OneDrive URL: {download_url}")
                 
-                # Download with proper headers
+                # Download with proper headers and session
                 headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
                 }
-                response = requests.get(download_url, stream=True, allow_redirects=True, 
-                                      headers=headers, timeout=300)
-                response.raise_for_status()
+                
+                # First, try to get the direct download URL by following redirects
+                session = requests.Session()
+                session.headers.update(headers)
+                
+                # Get the initial page to find the actual download URL
+                initial_response = session.get(download_url, allow_redirects=True)
+                initial_response.raise_for_status()
+                
+                # Check if we got redirected to a download URL
+                final_url = initial_response.url
+                print(f"🔄 Final URL after redirects: {final_url}")
+                
+                # If the content type suggests it's the file, use this response
+                content_type = initial_response.headers.get('content-type', '')
+                if 'application/octet-stream' in content_type or 'parquet' in content_type or len(initial_response.content) > 1000000:
+                    print("✅ Got direct download response")
+                    response = initial_response
+                else:
+                    # Try adding download parameter
+                    if '?' in download_url:
+                        download_url_with_param = download_url + '&download=1'
+                    else:
+                        download_url_with_param = download_url + '?download=1'
+                    
+                    print(f"🔄 Trying with download parameter: {download_url_with_param}")
+                    response = session.get(download_url_with_param, stream=True, allow_redirects=True, timeout=300)
+                    response.raise_for_status()
                 
                 # Save the file
                 total_size = 0
