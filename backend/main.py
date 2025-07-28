@@ -32,26 +32,50 @@ def download_onedrive_data():
             # Create data directory if it doesn't exist
             Path(settings.DATA_DIRECTORY).mkdir(parents=True, exist_ok=True)
             
-            # For OneDrive share links, try to get direct download
+            # For OneDrive direct file links, convert to download URL
             onedrive_url = settings.ONEDRIVE_DATA_URL
-            print(f"INFO: Using OneDrive URL: {onedrive_url}")
+            if "1drv.ms/u/" in onedrive_url:
+                # Convert OneDrive share URL to direct download URL
+                download_url = onedrive_url.replace("?e=", "&download=1&e=")
+                print(f"INFO: Using OneDrive direct download URL")
+            else:
+                download_url = onedrive_url
             
-            # Try direct download with various methods
-            response = requests.get(onedrive_url, stream=True, allow_redirects=True)
+            print(f"INFO: Downloading from: {download_url}")
+            
+            # Download the file with timeout and proper headers
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            response = requests.get(download_url, stream=True, allow_redirects=True, 
+                                  headers=headers, timeout=300)
             response.raise_for_status()
             
             # Save to local file
             print(f"INFO: Saving downloaded data to {settings.DATA_PATH}")
+            total_size = 0
             with open(settings.DATA_PATH, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
+                for chunk in response.iter_content(chunk_size=1024*1024):  # 1MB chunks
                     if chunk:
                         f.write(chunk)
+                        total_size += len(chunk)
+                        if total_size % (50*1024*1024) == 0:  # Log every 50MB
+                            print(f"INFO: Downloaded {total_size/(1024*1024):.1f} MB...")
             
             # Verify file was downloaded
             if os.path.exists(settings.DATA_PATH) and os.path.getsize(settings.DATA_PATH) > 0:
                 file_size = os.path.getsize(settings.DATA_PATH) / (1024*1024)  # MB
                 print(f"INFO: Successfully downloaded data to {settings.DATA_PATH} ({file_size:.1f} MB)")
-                return True
+                
+                # Quick validation - try to read the parquet file
+                try:
+                    test_df = pd.read_parquet(settings.DATA_PATH, nrows=10)
+                    print(f"INFO: File validation successful - {len(test_df.columns)} columns detected")
+                    return True
+                except Exception as validate_error:
+                    print(f"ERROR: Downloaded file is not a valid parquet file: {validate_error}")
+                    os.remove(settings.DATA_PATH)  # Remove invalid file
+                    return False
             else:
                 print(f"ERROR: File download failed or file is empty")
                 return False
@@ -59,6 +83,9 @@ def download_onedrive_data():
         except Exception as e:
             print(f"ERROR: Failed to download from OneDrive: {e}")
             return False
+    elif os.path.exists(settings.DATA_PATH):
+        file_size = os.path.getsize(settings.DATA_PATH) / (1024*1024)  # MB
+        print(f"INFO: Data file already exists ({file_size:.1f} MB)")
     return True
 
 @lru_cache(maxsize=1)
