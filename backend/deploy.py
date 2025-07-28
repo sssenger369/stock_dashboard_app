@@ -24,56 +24,67 @@ def ensure_data():
             if settings.ONEDRIVE_DATA_URL:
                 print("🔄 Downloading full dataset from OneDrive...")
                 
-                # For OneDrive direct file links, try multiple approaches
-                download_url = settings.ONEDRIVE_DATA_URL
-                print(f"📁 Using OneDrive URL: {download_url}")
+                # Handle both Google Drive and OneDrive URLs
+                original_url = settings.ONEDRIVE_DATA_URL
+                print(f"📁 Using cloud storage URL: {original_url}")
+                
+                # Convert Google Drive share URL to direct download URL
+                if "drive.google.com" in original_url:
+                    # Extract file ID from Google Drive URL
+                    if "/file/d/" in original_url:
+                        file_id = original_url.split("/file/d/")[1].split("/")[0]
+                        download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+                        print(f"🔄 Converted to Google Drive direct download: {download_url}")
+                    else:
+                        download_url = original_url
+                else:
+                    # OneDrive URL (fallback)
+                    download_url = original_url
                 
                 # Download with proper headers and session
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
                 }
                 
-                # First, try to get the direct download URL by following redirects
                 session = requests.Session()
                 session.headers.update(headers)
                 
-                # Get the initial page to find the actual download URL
-                initial_response = session.get(download_url, allow_redirects=True)
-                initial_response.raise_for_status()
+                # For Google Drive, handle the virus scan warning for large files
+                if "drive.google.com" in download_url:
+                    print("🔄 Getting Google Drive download (may need to handle virus scan warning)...")
+                    initial_response = session.get(download_url, allow_redirects=True)
+                    initial_response.raise_for_status()
+                    
+                    # Check if we got a virus scan warning page
+                    if "virus scan warning" in initial_response.text.lower() or "download anyway" in initial_response.text.lower():
+                        print("⚠️  Handling Google Drive virus scan warning...")
+                        # Look for the confirm parameter in the response
+                        import re
+                        confirm_match = re.search(r'confirm=([^&]+)', initial_response.text)
+                        if confirm_match:
+                            confirm_code = confirm_match.group(1)
+                            download_url = f"https://drive.google.com/uc?export=download&confirm={confirm_code}&id={file_id}"
+                            print(f"🔄 Using confirmed download URL")
+                            response = session.get(download_url, stream=True, allow_redirects=True, timeout=300)
+                        else:
+                            response = initial_response
+                    else:
+                        response = initial_response
+                else:
+                    # Non-Google Drive URL
+                    response = session.get(download_url, stream=True, allow_redirects=True, timeout=300)
                 
-                # Check if we got redirected to a download URL
-                final_url = initial_response.url
-                print(f"🔄 Final URL after redirects: {final_url}")
+                response.raise_for_status()
                 
-                # Check if this looks like actual file content
-                content_type = initial_response.headers.get('content-type', '')
-                content_length = initial_response.headers.get('content-length', '0')
+                # Check response headers
+                content_type = response.headers.get('content-type', '')
+                content_length = response.headers.get('content-length', '0')
                 
                 print(f"📋 Content-Type: {content_type}")
                 print(f"📏 Content-Length: {content_length}")
                 
-                # For embed URLs, the initial response might be the file
-                if (('application/octet-stream' in content_type or 
-                     'binary' in content_type or
-                     int(content_length) > 10000000) and  # > 10MB suggests it's the file
-                    'text/html' not in content_type):
-                    print("✅ Got direct file download from embed URL")
-                    response = initial_response
-                else:
-                    # Try adding download parameter for regular share URLs
-                    download_url_with_param = download_url + '?download=1'
-                    print(f"🔄 Trying with download parameter: {download_url_with_param}")
-                    response = session.get(download_url_with_param, stream=True, allow_redirects=True, timeout=300)
-                    response.raise_for_status()
-                    
-                    # Check this response too
-                    new_content_type = response.headers.get('content-type', '')
-                    new_content_length = response.headers.get('content-length', '0')
-                    print(f"📋 New Content-Type: {new_content_type}")
-                    print(f"📏 New Content-Length: {new_content_length}")
-                
                 # Verify we're getting a reasonable file size
-                expected_size = int(response.headers.get('content-length', '0'))
+                expected_size = int(content_length) if content_length.isdigit() else 0
                 if expected_size < 10000000:  # Less than 10MB is suspicious
                     print(f"⚠️  Warning: Expected file size is only {expected_size/1024/1024:.1f} MB")
                 else:
