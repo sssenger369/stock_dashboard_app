@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "mcp__ide__executeCode",
+      "Bash(python:*)"
+    ],
+    "deny": []
+  }
+}
