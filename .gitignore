@@ -59,7 +59,7 @@ jspm_packages/
 # Yarn Integrity file
 .yarn-integrity
 
-# Python cache (if you add a backend later)
+# Python backend files
 __pycache__/
 *.py[cod]
 *$py.class
@@ -68,3 +68,15 @@ __pycache__/
 env/
 venv/
 ENV/
+.venv/
+backend/.env
+backend/venv/
+
+# Data files (Parquet files can be large)
+*.parquet
+*.csv.gz
+backend/data/
+
+# Jupyter notebooks (if any)
+*.ipynb
+.ipynb_checkpoints/

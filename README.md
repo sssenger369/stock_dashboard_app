@@ -1,6 +1,6 @@
 # Stock Dashboard App
 
-A professional React-based stock market dashboard that visualizes Indian stock data with technical indicators and interactive charts.
+A full-stack professional stock market dashboard that visualizes Indian stock data with technical indicators and interactive charts.
 
 ![Dashboard Preview](https://via.placeholder.com/800x400/1e293b/ffffff?text=Stock+Dashboard+Preview)
 
@@ -10,7 +10,7 @@ A professional React-based stock market dashboard that visualizes Indian stock d
 - **Interactive Charts**: Candlestick and line charts with zoom and brush functionality
 - **Technical Indicators**: Support for 20+ indicators including EMAs, VWAP, Pivot Points, Fibonacci levels
 - **Search Functionality**: Searchable dropdowns for symbols, indicators, and crossover signals
-- **Real-time Data**: Integration with FastAPI backend for Indian stock market data
+- **Real-time Data**: FastAPI backend serves data from Parquet files with caching
 - **Responsive Design**: Modern UI with Tailwind CSS v4 and glass-morphism effects
 - **Performance Optimized**: Data sampling and lazy loading for large datasets
 
@@ -25,10 +25,12 @@ A professional React-based stock market dashboard that visualizes Indian stock d
 - **Axios** for API communication
 - **Date-fns** for date manipulation
 
-### Backend (Expected)
-- **FastAPI** running on port 8000
-- Endpoints for stock symbols and time series data
-- Support for technical indicators calculation
+### Backend
+- **FastAPI** with automatic OpenAPI documentation
+- **Pandas** for efficient data processing
+- **Uvicorn** ASGI server with auto-reload
+- **LRU Caching** for improved performance
+- **Parquet file** data storage with technical indicators pre-calculated
 
 ## 📊 Technical Indicators Supported
 
@@ -41,34 +43,64 @@ A professional React-based stock market dashboard that visualizes Indian stock d
 - Previous High/Low
 - Linear Regression Curve
 
-## 🛠️ Installation
+## 🛠️ Installation & Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/sssenger369/stock_dashboard_app.git
-   cd stock_dashboard_app
-   ```
+### Prerequisites
+- **Node.js 18+** for frontend
+- **Python 3.8+** for backend
+- **Stock data** in Parquet format (configure path in backend/.env)
 
-2. **Install dependencies**
-   ```bash
-   cd frontend
-   npm install
-   ```
+### 1. Clone the repository
+```bash
+git clone https://github.com/sssenger369/stock_dashboard_app.git
+cd stock_dashboard_app
+```
 
-3. **Start development server**
-   ```bash
-   npm run dev
-   ```
+### 2. Backend Setup
+```bash
+cd backend
 
-4. **Access the application**
-   - Frontend: `http://localhost:5173`
-   - Expected Backend: `http://127.0.0.1:8000`
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env
+# Edit .env file with your data path
+
+# Start backend server
+python start.py
+```
+
+### 3. Frontend Setup
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+### 4. Access the application
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://127.0.0.1:8000
+- **API Documentation**: http://127.0.0.1:8000/docs
 
 ## 📁 Project Structure
 
 ```
 stock_dashboard_app/
-├── frontend/
+├── frontend/                                     # React frontend application
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── ProfessionalStockDashboard.jsx    # Main dashboard component
@@ -77,14 +109,21 @@ stock_dashboard_app/
 │   │   │   └── MultiFieldChart.jsx               # Multi-field visualization
 │   │   ├── App.jsx                               # Main app with state management
 │   │   └── main.jsx                              # React entry point
-│   ├── package.json
-│   └── vite.config.js
+│   ├── package.json                              # Frontend dependencies
+│   └── vite.config.js                            # Vite configuration
+├── backend/                                      # FastAPI backend application
+│   ├── main.py                                   # FastAPI application
+│   ├── start.py                                  # Backend startup script
+│   ├── requirements.txt                          # Python dependencies
+│   ├── .env.example                              # Environment template
+│   └── README.md                                 # Backend documentation  
 ├── CLAUDE.md                                     # Development instructions
-└── README.md
+└── README.md                                     # Project documentation
 ```
 
 ## 🔧 Development Commands
 
+### Frontend Commands (from `frontend/` directory)
 ```bash
 # Start development server
 npm run dev
@@ -97,6 +136,18 @@ npm run preview
 
 # Run ESLint
 npm run lint
+```
+
+### Backend Commands (from `backend/` directory)
+```bash
+# Start backend server with auto-reload
+python start.py
+
+# Or use uvicorn directly
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+
+# Install/update dependencies
+pip install -r requirements.txt
 ```
 
 ## 📡 API Integration
