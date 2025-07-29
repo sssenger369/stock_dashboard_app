@@ -16,6 +16,21 @@ def ensure_data():
         print("Data file not found, trying OneDrive download...")
         data_dir.mkdir(exist_ok=True)
         
+        # Check if this is a Git LFS placeholder file
+        if data_dir.exists():
+            potential_files = list(data_dir.glob("*.parquet"))
+            if potential_files:
+                existing_file = potential_files[0]
+                file_size = existing_file.stat().st_size
+                print(f"📁 Found existing file: {existing_file} ({file_size/1024/1024:.1f} MB)")
+                
+                # If file is very small, it might be a Git LFS pointer - try to use it anyway
+                if file_size < 1000:  # Less than 1KB suggests LFS pointer
+                    print("⚠️  File appears to be Git LFS pointer, but attempting to use...")
+                else:
+                    print("✅ File appears to be actual data, skipping download")
+                    return
+        
         # Try to download from OneDrive first
         try:
             from config import settings
