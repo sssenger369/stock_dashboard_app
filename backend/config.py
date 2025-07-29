@@ -14,7 +14,7 @@ class Settings:
     # Data configuration  
     DATA_DIRECTORY = os.getenv("DATA_DIRECTORY", "./data")
     DATA_FILENAME = os.getenv("DATA_FILENAME", "Final_Data.parquet")
-    ONEDRIVE_DATA_URL = os.getenv("ONEDRIVE_DATA_URL", "https://drive.google.com/file/d/1WjMiU5FWWB3bpKER_ZfvZk-QXwVhLIl9/view?usp=sharing")
+    ONEDRIVE_DATA_URL = os.getenv("ONEDRIVE_DATA_URL", "https://storage.googleapis.com/stock-data-sss-2024/Final_Data.parquet")
     
     @property
     def DATA_PATH(self):

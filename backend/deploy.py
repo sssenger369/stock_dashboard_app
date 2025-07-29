@@ -37,26 +37,13 @@ def ensure_data():
             import requests
             
             if settings.ONEDRIVE_DATA_URL:
-                print("🔄 Downloading full dataset from OneDrive...")
+                print("🔄 Downloading full dataset from cloud storage...")
                 
-                # Handle both Google Drive and OneDrive URLs
+                # Handle different cloud storage URLs
                 original_url = settings.ONEDRIVE_DATA_URL
                 print(f"📁 Using cloud storage URL: {original_url}")
                 
-                # Convert Google Drive share URL to direct download URL
-                if "drive.google.com" in original_url:
-                    # Extract file ID from Google Drive URL
-                    if "/file/d/" in original_url:
-                        file_id = original_url.split("/file/d/")[1].split("/")[0]
-                        download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-                        print(f"🔄 Converted to Google Drive direct download: {download_url}")
-                    else:
-                        download_url = original_url
-                else:
-                    # OneDrive URL (fallback)
-                    download_url = original_url
-                
-                # Download with proper headers and session
+                # Download with proper headers
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
                 }
@@ -64,66 +51,28 @@ def ensure_data():
                 session = requests.Session()
                 session.headers.update(headers)
                 
-                # For Google Drive, handle large file downloads properly
-                if "drive.google.com" in download_url:
-                    print("🔄 Getting Google Drive download (handling large file properly)...")
-                    
-                    # Step 1: Get the initial response to check for virus scan warning
-                    initial_response = session.get(download_url, allow_redirects=False)
-                    initial_response.raise_for_status()
-                    
-                    print(f"📋 Initial response status: {initial_response.status_code}")
-                    print(f"📏 Initial content length: {len(initial_response.content)}")
-                    
-                    # Check if we need to handle redirects or warnings
-                    if initial_response.status_code == 302 or 'Location' in initial_response.headers:
-                        # Follow redirect manually
-                        redirect_url = initial_response.headers.get('Location', download_url)
-                        print(f"🔄 Following redirect to: {redirect_url[:100]}...")
-                        response = session.get(redirect_url, stream=True, allow_redirects=True, timeout=600)
-                    elif len(initial_response.content) < 100000:  # Small response suggests HTML warning page
-                        print("⚠️  Got virus scan warning page, extracting download link...")
-                        
-                        # Look for the actual download link in the HTML
-                        import re
-                        text = initial_response.text
-                        
-                        # Multiple patterns to find the download URL
-                        download_patterns = [
-                            r'href="(/uc\?export=download[^"]+)"',
-                            r'"downloadUrl":"([^"]+)"',
-                            r'action="([^"]+uc\?export=download[^"]*)"',
-                            r'<a[^>]*href="([^"]*uc\?export=download[^"]*)"'
-                        ]
-                        
-                        download_link = None
-                        for pattern in download_patterns:
-                            matches = re.findall(pattern, text)
-                            for match in matches:
-                                if 'export=download' in match:
-                                    if match.startswith('/'):
-                                        download_link = f"https://drive.google.com{match}"
-                                    else:
-                                        download_link = match.replace('\\u0026', '&')
-                                    print(f"✅ Found download link in HTML")
-                                    break
-                            if download_link:
-                                break
-                        
-                        if download_link:
-                            print(f"🔄 Using extracted download link")
-                            response = session.get(download_link, stream=True, allow_redirects=True, timeout=600)
-                        else:
-                            print("❌ Could not extract download link, trying cookie-based approach...")
-                            # Try using the file ID with cookies
-                            cookie_url = f"https://drive.google.com/uc?id={file_id}&export=download&confirm=t"
-                            response = session.get(cookie_url, stream=True, allow_redirects=True, timeout=600)
+                # Google Cloud Storage URLs are direct and reliable
+                if "storage.googleapis.com" in original_url:
+                    print("✅ Using Google Cloud Storage - direct download")
+                    response = session.get(original_url, stream=True, allow_redirects=True, timeout=600)
+                    response.raise_for_status()
+                elif "drive.google.com" in original_url:
+                    # Legacy Google Drive handling (kept as fallback)
+                    print("🔄 Google Drive URL detected - using advanced handling...")
+                    if "/file/d/" in original_url:
+                        file_id = original_url.split("/file/d/")[1].split("/")[0]
+                        download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
                     else:
-                        print("✅ Got direct file response")
-                        response = initial_response
+                        download_url = original_url
+                    
+                    # Simple direct download attempt first
+                    response = session.get(download_url, stream=True, allow_redirects=True, timeout=600)
+                    response.raise_for_status()
                 else:
-                    # Non-Google Drive URL
-                    response = session.get(download_url, stream=True, allow_redirects=True, timeout=300)
+                    # Other cloud storage or direct URLs
+                    print("🔄 Direct download from URL")
+                    response = session.get(original_url, stream=True, allow_redirects=True, timeout=600)
+                    response.raise_for_status()
                 
                 response.raise_for_status()
                 
