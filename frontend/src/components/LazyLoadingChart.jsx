@@ -1,7 +1,9 @@
 // frontend/src/components/LazyLoadingChart.jsx
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import Chart from 'react-apexcharts';
 import { format, parseISO, isValid, subDays, addDays } from 'date-fns';
+
+// Lazy load ApexCharts to avoid SSR issues
+const Chart = React.lazy(() => import('react-apexcharts'));
 
 /**
  * TradingView-style Lazy Loading Candlestick Chart Component
@@ -50,7 +52,7 @@ const LazyLoadingChart = ({
   const CHUNK_SIZE = 200; // Max records per API call
 
   /**
-   * Initial data load - gets recent N days for chart initialization
+   * Initial data load - fallback to existing API until lazy endpoints are available
    */
   const loadInitialData = useCallback(async () => {
     if (!symbol) return;
@@ -59,17 +61,33 @@ const LazyLoadingChart = ({
     setError(null);
     
     try {
-      console.log(`🚀 Loading initial ${INITIAL_LOAD_DAYS} days for ${symbol}`);
+      // Try new lazy loading endpoint first, fallback to existing API
+      let url = `${apiBaseUrl}/stock_data/${symbol}/latest?days=${INITIAL_LOAD_DAYS}`;
+      console.log(`🚀 Trying lazy loading endpoint for ${symbol}`);
+      console.log(`🔗 API URL: ${url}`);
       
-      const response = await fetch(
-        `${apiBaseUrl}/stock_data/${symbol}/latest?days=${INITIAL_LOAD_DAYS}`
-      );
+      let response = await fetch(url);
+      console.log(`📡 Response status: ${response.status}`);
       
+      // If lazy endpoint fails, fallback to existing API
       if (!response.ok) {
-        throw new Error(`Failed to load initial data: ${response.statusText}`);
+        console.log(`⚠️ Lazy endpoint failed, falling back to existing API`);
+        const endDate = new Date().toISOString().split('T')[0];
+        const startDate = new Date(Date.now() - 100 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        url = `${apiBaseUrl}/stock_data/${symbol}?start_date=${startDate}&end_date=${endDate}`;
+        console.log(`🔗 Fallback URL: ${url}`);
+        
+        response = await fetch(url);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`❌ API Error: ${response.status} ${response.statusText}`, errorText);
+          throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
+        }
       }
       
       const data = await response.json();
+      console.log(`📊 Raw data received:`, data ? data.length || 'N/A' : 'null', 'records');
       
       if (data && data.length > 0) {
         // Sort by timestamp
@@ -132,16 +150,23 @@ const LazyLoadingChart = ({
     try {
       console.log(`🔍 Loading range data: ${format(queryStart, 'yyyy-MM-dd')} to ${format(queryEnd, 'yyyy-MM-dd')}`);
       
-      const response = await fetch(
-        `${apiBaseUrl}/stock_data/${symbol}/range?start_date=${format(queryStart, 'yyyy-MM-dd')}&end_date=${format(queryEnd, 'yyyy-MM-dd')}&limit=${CHUNK_SIZE}`
-      );
+      // Try lazy range endpoint first, fallback to existing API
+      let url = `${apiBaseUrl}/stock_data/${symbol}/range?start_date=${format(queryStart, 'yyyy-MM-dd')}&end_date=${format(queryEnd, 'yyyy-MM-dd')}&limit=${CHUNK_SIZE}`;
+      let response = await fetch(url);
       
+      // If range endpoint fails, fallback to existing API
       if (!response.ok) {
-        throw new Error(`Failed to load range data: ${response.statusText}`);
+        console.log(`⚠️ Range endpoint failed, falling back to existing API`);
+        url = `${apiBaseUrl}/stock_data/${symbol}?start_date=${format(queryStart, 'yyyy-MM-dd')}&end_date=${format(queryEnd, 'yyyy-MM-dd')}`;
+        response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to load range data: ${response.statusText}`);
+        }
       }
       
       const result = await response.json();
-      const data = result.data || [];
+      const data = result.data || result || []; // Handle both new and old API response formats
       
       if (data.length > 0) {
         // Sort by timestamp
@@ -540,14 +565,25 @@ const LazyLoadingChart = ({
 
       {/* TradingView-style Lazy Loading Chart */}
       <div className="w-full" style={{ minHeight: height }}>
-        <Chart
-          ref={chartRef}
-          options={chartOptions}
-          series={series}
-          type="candlestick"
-          height={height}
-          width="100%"
-        />
+        <React.Suspense 
+          fallback={
+            <div className="flex items-center justify-center" style={{ height: height }}>
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p className="text-gray-400">Loading chart component...</p>
+              </div>
+            </div>
+          }
+        >
+          <Chart
+            ref={chartRef}
+            options={chartOptions}
+            series={series}
+            type="candlestick"
+            height={height}
+            width="100%"
+          />
+        </React.Suspense>
       </div>
 
       {/* Chart Footer */}
