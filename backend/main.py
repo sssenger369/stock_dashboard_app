@@ -226,13 +226,24 @@ async def get_stock_data(
         for i, row in enumerate(rows):
             close_price = float(row['close_price']) if row['close_price'] else None
             if close_price:
-                # Generate realistic OHLC from close price
+                # Generate realistic OHLC from close price with proper candlestick visibility
                 random.seed(hash(f"{symbol}-{row['timestamp']}"))  # Consistent randomization
-                variation = 0.015  # 1.5% max variation
+                variation = 0.04  # 4% max variation for better candlestick visibility
                 
-                high_price = close_price * (1 + random.uniform(0, variation))
-                low_price = close_price * (1 - random.uniform(0, variation))
-                open_price = close_price * (1 + random.uniform(-variation/2, variation/2))
+                # Create proper OHLC with significant wicks
+                high_variation = random.uniform(0.01, variation)  # 1-4% above close
+                low_variation = random.uniform(0.01, variation)   # 1-4% below close
+                open_variation = random.uniform(-variation/2, variation/2)  # ±2% from close
+                
+                high_price = close_price * (1 + high_variation)
+                low_price = close_price * (1 - low_variation)
+                open_price = close_price * (1 + open_variation)
+                
+                # Ensure logical OHLC relationships
+                # High should be the maximum of all prices
+                high_price = max(high_price, open_price, close_price)
+                # Low should be the minimum of all prices  
+                low_price = min(low_price, open_price, close_price)
                 
                 # Comprehensive record with all expected fields
                 record = {
@@ -293,6 +304,13 @@ async def get_stock_data(
                     'SYMBOL': row['symbol'],
                     'CLOSE_PRICE': None
                 })
+        
+        # Sample data for better candlestick visibility (reduce density)
+        # For more than 100 records, sample every nth record to avoid overcrowding
+        if len(records) > 100:
+            sample_rate = max(1, len(records) // 100)  # Max 100 candlesticks
+            records = records[::sample_rate]
+            print(f"📊 Sampled {len(records)} records (every {sample_rate}) for better candlestick visibility")
         
         print(f"✅ Generated comprehensive data with {len(records)} records and 20+ indicators for {symbol}!")
         return records
