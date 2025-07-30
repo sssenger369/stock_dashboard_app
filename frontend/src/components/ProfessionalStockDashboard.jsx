@@ -15,6 +15,7 @@ import {
 import CandlestickChart from './CandlestickChart';
 import StockPriceChart from './StockPriceChart';
 import MultiFieldChart from './MultiFieldChart';
+import LazyLoadingChart from './LazyLoadingChart';
 
 function ProfessionalStockDashboard({ 
   symbols = [], 
@@ -78,33 +79,32 @@ function ProfessionalStockDashboard({
     return symbol.replace('.NS', '').replace('.BO', '');
   }, []);
 
-  // Available technical indicators
+  // Available technical indicators (updated to match backend field names)
   const availableIndicators = [
     { value: 'ROLLING_MEDIAN', label: 'Rolling Median', color: '#10b981' },
     { value: 'ROLLING_MODE', label: 'Rolling Mode', color: '#f59e0b' },
     { value: 'PP', label: 'Pivot Point', color: '#8b5cf6' },
     { value: 'S1', label: 'Support 1', color: '#ef4444' },
     { value: 'S2', label: 'Support 2', color: '#dc2626' },
+    { value: 'S3', label: 'Support 3', color: '#b91c1c' },
+    { value: 'S4', label: 'Support 4', color: '#991b1b' },
     { value: 'R1', label: 'Resistance 1', color: '#22c55e' },
     { value: 'R2', label: 'Resistance 2', color: '#16a34a' },
     { value: 'R3', label: 'Resistance 3', color: '#15803d' },
     { value: 'R4', label: 'Resistance 4', color: '#166534' },
-    { value: 'S3', label: 'Support 3', color: '#b91c1c' },
-    { value: 'S4', label: 'Support 4', color: '#991b1b' },
     { value: 'BC', label: 'Bottom Channel', color: '#0891b2' },
     { value: 'TC', label: 'Top Channel', color: '#0e7490' },
-    { value: 'FIB_EXT_0.236', label: 'Fibonacci 23.6%', color: '#7c3aed' },
-    { value: 'FIB_EXT_0.786', label: 'Fibonacci 78.6%', color: '#6d28d9' },
+    { value: 'FE_23_6', label: 'Fibonacci 23.6%', color: '#7c3aed' },
+    { value: 'FE_38_2', label: 'Fibonacci 38.2%', color: '#6d28d9' },
+    { value: 'FE_50', label: 'Fibonacci 50.0%', color: '#5b21b6' },
+    { value: 'FE_61_8', label: 'Fibonacci 61.8%', color: '#4c1d95' },
     { value: 'VWAP_W', label: 'VWAP Weekly', color: '#059669' },
     { value: 'VWAP_M', label: 'VWAP Monthly', color: '#0d9488' },
     { value: 'VWAP_Q', label: 'VWAP Quarterly', color: '#0f766e' },
     { value: 'VWAP_Y', label: 'VWAP Yearly', color: '#115e59' },
     { value: 'EMA_63', label: 'EMA 63', color: '#f97316' },
     { value: 'EMA_144', label: 'EMA 144', color: '#ea580c' },
-    { value: 'EMA_234', label: 'EMA 234', color: '#c2410c' },
-    { value: 'PREV_HIGH', label: 'Previous High', color: '#14b8a6' },
-    { value: 'PREV_LOW', label: 'Previous Low', color: '#f43f5e' },
-    { value: 'LINREG_CURVE_63', label: 'Linear Regression 63', color: '#8b5a2b' }
+    { value: 'EMA_234', label: 'EMA 234', color: '#c2410c' }
   ];
 
   // Filter functions
@@ -666,6 +666,7 @@ function ProfessionalStockDashboard({
             <div className="flex space-x-1 bg-slate-800/30 p-1 rounded-xl">
               {[
                 { id: 'overview', label: 'Overview', icon: Activity },
+                { id: 'lazy', label: 'TradingView Style', icon: BarChart3 },
                 { id: 'fields', label: 'Volume Analysis', icon: Target },
                 { id: 'analysis', label: 'Analysis', icon: TrendingUp },
                 { id: 'alerts', label: 'Alerts', icon: AlertCircle }
@@ -881,6 +882,33 @@ function ProfessionalStockDashboard({
             </div>
           )}
 
+          {/* TradingView-style Lazy Loading Tab */}
+          {activeTab === 'lazy' && (
+            <div className="space-y-6">
+              <div className="bg-slate-800/30 backdrop-blur-lg rounded-xl border border-slate-700/50 p-4 mb-6">
+                <div className="flex items-center space-x-3 mb-3">
+                  <BarChart3 className="w-5 h-5 text-blue-400" />
+                  <h3 className="text-lg font-semibold text-white">TradingView-Style Lazy Loading</h3>
+                </div>
+                <p className="text-slate-400 text-sm">
+                  Progressive data loading with viewport-based fetching. Zoom and pan to automatically load more data.
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3 text-xs">
+                  <span className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded">🔄 Progressive Loading</span>
+                  <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded">🎯 Viewport-Based</span>
+                  <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded">📦 Smart Caching</span>
+                  <span className="bg-orange-500/20 text-orange-300 px-2 py-1 rounded">⚡ High Performance</span>
+                </div>
+              </div>
+              
+              <LazyLoadingChart
+                symbol={selectedSymbol}
+                height={600}
+                selectedIndicators={selectedIndicators}
+                apiBaseUrl={window.location.origin.includes('localhost') ? 'http://127.0.0.1:8000' : 'https://stock-dashboard-8880484803.us-central1.run.app'}
+              />
+            </div>
+          )}
 
           {/* Volume Analysis Tab */}
           {activeTab === 'fields' && (

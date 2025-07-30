@@ -4,7 +4,7 @@ import Chart from 'react-apexcharts';
 import { format, parseISO, isValid } from 'date-fns';
 
 /**
- * Professional Candlestick Chart Component
+ * Professional Candlestick Chart Component - TradingView Style
  * 
  * @param {Object} props
  * @param {Array} props.data - Array of OHLC data objects
@@ -27,183 +27,40 @@ const CandlestickChart = ({
   style = {} 
 }) => {
   
-  // Helper function to format stock info as subtitle
-  const formatStockInfoSubtitle = useMemo(() => {
-    if (!data || data.length === 0) return '';
+  // Clean subtitle generation
+  const subtitle = useMemo(() => {
+    if (!data || data.length === 0) return 'OHLC Technical Analysis';
     
-    const firstRecord = data[0];
+    const totalCandles = data.length;
+    const firstDate = data[0]?.TIMESTAMP ? new Date(data[0].TIMESTAMP).toLocaleDateString() : '';
+    const lastDate = data[data.length - 1]?.TIMESTAMP ? new Date(data[data.length - 1].TIMESTAMP).toLocaleDateString() : '';
     
-    // Debug: Log ALL available fields and their values
-    console.log('\n=== 🔍 CandlestickChart - COMPLETE FIELD DEBUG ===');
-    console.log('📋 All available fields:', Object.keys(firstRecord));
-    console.log('\n📊 Complete first record data:');
-    Object.keys(firstRecord).forEach(key => {
-      console.log(`  ${key}: ${firstRecord[key]} (${typeof firstRecord[key]})`);
-    });
-    
-    // Look for stock info related fields specifically
-    const stockInfoFields = Object.keys(firstRecord).filter(key => 
-      key.toLowerCase().includes('sector') ||
-      key.toLowerCase().includes('industry') ||
-      key.toLowerCase().includes('rating') ||
-      key.toLowerCase().includes('quality') ||
-      key.toLowerCase().includes('growth') ||
-      key.toLowerCase().includes('mcap') ||
-      key.toLowerCase().includes('cap') ||
-      key.toLowerCase().includes('nifty') ||
-      key.toLowerCase().includes('next') ||
-      key.toLowerCase().includes('alpha') ||
-      key.toLowerCase().includes('beta') ||
-      key.toLowerCase().includes('fno') ||
-      key.toLowerCase().includes('f&o') ||
-      key.toLowerCase().includes('flag')
-    );
-    
-    console.log('\n🎯 Potential stock info fields found:');
-    stockInfoFields.forEach(field => {
-      console.log(`  ${field}: ${firstRecord[field]} (${typeof firstRecord[field]})`);
-    });
-    console.log('=== END COMPLETE FIELD DEBUG ===\n');
-    
-    const parts = [];
-    
-    // Dynamic field detection - find fields by pattern matching
-    const findField = (patterns) => {
-      for (const pattern of patterns) {
-        const field = Object.keys(firstRecord).find(key => 
-          key.toLowerCase().includes(pattern.toLowerCase())
-        );
-        if (field && firstRecord[field] && firstRecord[field] !== 'N/A') {
-          return firstRecord[field];
-        }
-      }
-      return null;
-    };
-    
-    // Look for each type of field dynamically
-    const sector = findField(['SECTOR', 'sector']);
-    const industry = findField(['INDUSTRY', 'industry']);
-    const mcap = findField(['MCAP_CATEGORY', 'mcap_category', 'MARKET_CAP', 'mcap', 'cap_category']);
-    const rating = findField(['STOCK_RATING', 'stock_rating', 'RATING', 'rating']);
-    const quality = findField(['QUALITY_SCORE', 'quality_score', 'QUALITY', 'quality']);
-    const growth = findField(['GROWTH_SCORE', 'growth_score', 'GROWTH', 'growth']);
-    const nifty50 = findField(['NIFTY_50', 'nifty_50', 'NIFTY50', 'nifty50']);
-    const nifty500 = findField(['NIFTY_500', 'nifty_500', 'NIFTY500', 'nifty500']);
-    const next50 = findField(['NEXT_50', 'next_50', 'NEXT50', 'next50']);
-    const alpha50 = findField(['ALPHA_50', 'alpha_50', 'ALPHA50', 'alpha50']);
-    const beta50 = findField(['BETA_50', 'beta_50', 'BETA50', 'beta50']);
-    const fno = findField(['FNO', 'fno', 'F_AND_O', 'f_and_o']);
-    const flag = findField(['FLAG', 'flag']);
-    
-    // Specific FNO debugging
-    console.log('\n🔍 FNO Field Debug:');
-    const fnoFields = Object.keys(firstRecord).filter(key => 
-      key.toLowerCase().includes('fno') || 
-      key.toLowerCase().includes('f_and_o') ||
-      key.toLowerCase().includes('f&o')
-    );
-    console.log(`  FNO-related fields found: ${fnoFields}`);
-    fnoFields.forEach(field => {
-      console.log(`    ${field}: ${firstRecord[field]} (${typeof firstRecord[field]})`);
-    });
-    
-    // Check specific FNO field if it exists
-    if (firstRecord.FNO !== undefined) {
-      console.log(`  Direct FNO field: ${firstRecord.FNO}`);
-      console.log(`  FNO field type: ${typeof firstRecord.FNO}`);
-      console.log(`  Is FNO truthy: ${!!firstRecord.FNO}`);
-      console.log(`  FNO string value: "${String(firstRecord.FNO)}"`);
-      console.log(`  FNO lowercase: "${String(firstRecord.FNO).toLowerCase()}"`);
-      const checkValues = ['yes', 'y', '1', 'true', 'included', 1];
-      console.log(`  FNO matches any check value: ${checkValues.includes(String(firstRecord.FNO).toLowerCase())}`);
+    if (firstDate && lastDate && firstDate !== lastDate) {
+      return `${totalCandles} Trading Sessions • ${firstDate} to ${lastDate}`;
+    } else if (firstDate) {
+      return `${totalCandles} Trading Sessions • ${firstDate}`;
     } else {
-      console.log('  FNO field does not exist');
+      return `${totalCandles} Trading Sessions • Technical Analysis`;
     }
-    
-    // Debug: Show what we found
-    console.log('\n🔎 Found field values:');
-    console.log(`  sector: ${sector}`);
-    console.log(`  industry: ${industry}`);
-    console.log(`  mcap: ${mcap}`);
-    console.log(`  rating: ${rating}`);
-    console.log(`  quality: ${quality}`);
-    console.log(`  growth: ${growth}`);
-    console.log(`  nifty50: ${nifty50}`);
-    console.log(`  nifty500: ${nifty500}`);
-    console.log(`  next50: ${next50}`);
-    console.log(`  alpha50: ${alpha50}`);
-    console.log(`  beta50: ${beta50}`);
-    console.log(`  fno: ${fno}`);
-    console.log(`  flag: ${flag}`);
-    console.log('');
-    
-    // Add key information in a compact format
-    if (sector && sector !== 'N/A') parts.push(`${sector}`);
-    if (industry && industry !== 'N/A') parts.push(`${industry}`);
-    if (mcap && mcap !== 'N/A') parts.push(`${mcap} Cap`);
-    if (rating && rating !== 'N/A') parts.push(`Rating: ${rating}`);
-    if (quality && quality !== 'N/A') parts.push(`Quality: ${quality}`);
-    if (growth && growth !== 'N/A') parts.push(`Growth: ${growth}`);
-    
-    // Add index memberships
-    const indexes = [];
-    if (nifty50 && ['Yes', 'Y', '1', 'true', 'included', 1].includes(String(nifty50).toLowerCase())) indexes.push('Nifty 50');
-    if (nifty500 && ['Yes', 'Y', '1', 'true', 'included', 1].includes(String(nifty500).toLowerCase())) indexes.push('Nifty 500');
-    if (next50 && ['Yes', 'Y', '1', 'true', 'included', 1].includes(String(next50).toLowerCase())) indexes.push('Next 50');
-    if (alpha50 && ['Yes', 'Y', '1', 'true', 'included', 1].includes(String(alpha50).toLowerCase())) indexes.push('Alpha 50');
-    if (beta50 && ['Yes', 'Y', '1', 'true', 'included', 1].includes(String(beta50).toLowerCase())) indexes.push('Beta 50');
-    if (indexes.length > 0) parts.push(`Indexes: ${indexes.join(', ')}`);
-    
-    // Enhanced FNO detection
-    console.log(`\n🔍 FNO Processing:`);
-    console.log(`  fno value: ${fno}`);
-    console.log(`  fno type: ${typeof fno}`);
-    if (fno) {
-      const fnoString = String(fno).toLowerCase();
-      console.log(`  fno string: "${fnoString}"`);
-      const validValues = ['yes', 'y', '1', 'true', 'included', '1'];
-      const isValid = validValues.includes(fnoString) || fno === 1;
-      console.log(`  valid values: ${validValues}`);
-      console.log(`  is valid: ${isValid}`);
-      if (isValid) {
-        parts.push('F&O Available');
-        console.log(`  ✅ Added F&O Available to parts`);
-      } else {
-        console.log(`  ❌ FNO value "${fnoString}" not recognized as valid`);
-      }
-    } else {
-      console.log(`  ❌ No FNO value found`);
-    }
-    if (flag && flag !== 'N/A') parts.push(`Flag: ${flag}`);
-    
-    const result = parts.join(' • ');
-    console.log('🔍 CandlestickChart - Generated subtitle:', result);
-    
-    // Fallback test subtitle if no data found
-    if (result.length === 0) {
-      return 'Test Subtitle - Data fields not found';
-    }
-    
-    return result;
   }, [data]);
 
   // Transform data for ApexCharts candlestick format and technical indicators
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return { candlestickData: [], indicatorSeries: [], crossoverMarkers: [] };
     
-    // Filter out invalid data points
+    // Filter out invalid data points (convert strings to numbers for validation)
     const cleanData = data.filter(item => 
       item.OPEN_PRICE && 
       item.HIGH_PRICE && 
       item.LOW_PRICE && 
       item.CLOSE_PRICE &&
-      !isNaN(item.OPEN_PRICE) &&
-      !isNaN(item.HIGH_PRICE) &&
-      !isNaN(item.LOW_PRICE) &&
-      !isNaN(item.CLOSE_PRICE)
+      !isNaN(parseFloat(item.OPEN_PRICE)) &&
+      !isNaN(parseFloat(item.HIGH_PRICE)) &&
+      !isNaN(parseFloat(item.LOW_PRICE)) &&
+      !isNaN(parseFloat(item.CLOSE_PRICE))
     );
 
-    if (cleanData.length === 0) return { candlestickData: [], indicatorSeries: [] };
+    if (cleanData.length === 0) return { candlestickData: [], indicatorSeries: [], crossoverMarkers: [] };
 
     // Sort by timestamp
     cleanData.sort((a, b) => new Date(a.TIMESTAMP) - new Date(b.TIMESTAMP));
@@ -214,14 +71,15 @@ const CandlestickChart = ({
       const date = parseISO(item.TIMESTAMP);
       const timestamp = isValid(date) ? date.getTime() : new Date(item.TIMESTAMP).getTime();
       
+      // Ensure all OHLC values are proper numbers
+      const open = parseFloat(item.OPEN_PRICE);
+      const high = parseFloat(item.HIGH_PRICE);
+      const low = parseFloat(item.LOW_PRICE);
+      const close = parseFloat(item.CLOSE_PRICE);
+      
       return {
         x: timestamp,
-        y: [
-          parseFloat(item.OPEN_PRICE),
-          parseFloat(item.HIGH_PRICE), 
-          parseFloat(item.LOW_PRICE),
-          parseFloat(item.CLOSE_PRICE)
-        ],
+        y: [open, high, low, close], // ApexCharts expects [open, high, low, close]
         originalData: item // Keep original data for tooltips
       };
     });
@@ -230,11 +88,11 @@ const CandlestickChart = ({
     const indicatorSeries = selectedIndicators
       .filter(indicator => cleanData.some(d => d[indicator] !== null && d[indicator] !== undefined))
       .map(indicator => ({
-        name: indicator.replace(/_/g, ' '),
+        name: indicator,
+        type: 'line',
         data: cleanData.map(item => {
           const date = parseISO(item.TIMESTAMP);
           const timestamp = isValid(date) ? date.getTime() : new Date(item.TIMESTAMP).getTime();
-          
           return {
             x: timestamp,
             y: parseFloat(item[indicator]) || null
@@ -242,44 +100,33 @@ const CandlestickChart = ({
         }).filter(point => point.y !== null)
       }));
 
-    // Prepare crossover markers data (only where value = 1) - positioned below candles
+    // Prepare crossover markers data (only where value = 1)
     const crossoverMarkers = selectedCrossoverSignals
       .filter(signalValue => cleanData.some(d => d[signalValue] === 1))
       .map(signalValue => {
         const signalConfig = availableCrossoverSignals.find(s => s.value === signalValue);
         if (!signalConfig) return null;
-
-        const markers = cleanData
+        
+        const signalData = cleanData
           .filter(item => item[signalValue] === 1)
           .map(item => {
             const date = parseISO(item.TIMESTAMP);
             const timestamp = isValid(date) ? date.getTime() : new Date(item.TIMESTAMP).getTime();
-            
-            // Position arrows above for bull signals, below for bear signals
-            const lowPrice = parseFloat(item.LOW_PRICE);
-            const highPrice = parseFloat(item.HIGH_PRICE);
-            const isBullSignal = signalConfig.markerType === 'arrow-up';
-            const markerY = isBullSignal ? highPrice * 1.02 : lowPrice * 0.98; // 2% above high for bull, 2% below low for bear
+            const price = parseFloat(item.CLOSE_PRICE);
             
             return {
               x: timestamp,
-              y: markerY,
+              y: price,
               signalName: signalConfig.label,
               signalColor: signalConfig.color,
               markerType: signalConfig.markerType,
-              description: signalConfig.description,
-              actualPrice: {
-                open: parseFloat(item.OPEN_PRICE),
-                high: parseFloat(item.HIGH_PRICE),
-                low: lowPrice,
-                close: parseFloat(item.CLOSE_PRICE)
-              }
+              description: signalConfig.description
             };
           });
-
+        
         return {
           name: signalConfig.label,
-          data: markers,
+          data: signalData,
           config: signalConfig
         };
       })
@@ -288,28 +135,30 @@ const CandlestickChart = ({
     return { candlestickData, indicatorSeries, crossoverMarkers };
   }, [data, selectedIndicators, selectedCrossoverSignals, availableCrossoverSignals]);
 
-  // Calculate price range for better y-axis scaling
-  const priceRange = useMemo(() => {
+  // Calculate price range for Y-axis
+  const yAxisRange = useMemo(() => {
     if (chartData.candlestickData.length === 0) return { min: 0, max: 100 };
     
     const allPrices = chartData.candlestickData.flatMap(item => item.y);
-    const min = Math.min(...allPrices);
-    const max = Math.max(...allPrices);
-    const padding = (max - min) * 0.05; // 5% padding
+    const minPrice = Math.min(...allPrices);
+    const maxPrice = Math.max(...allPrices);
+    const padding = (maxPrice - minPrice) * 0.1;
     
     return {
-      min: Math.max(0, min - padding),
-      max: max + padding
+      min: Math.max(0, minPrice - padding),
+      max: maxPrice + padding
     };
   }, [chartData.candlestickData]);
 
-  // ApexCharts configuration
+  // TradingView-style ApexCharts configuration
   const chartOptions = {
     chart: {
       type: 'candlestick',
       height: height,
+      width: '100%',
       background: 'transparent',
       foreColor: '#ffffff',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
       toolbar: {
         show: true,
         tools: {
@@ -329,12 +178,26 @@ const CandlestickChart = ({
         autoScaleYaxis: true
       },
       animations: {
-        enabled: true,
-        easing: 'easeinout',
-        speed: 800
+        enabled: false // Disable for better performance and TradingView feel
       }
     },
-    // Remove built-in title to avoid duplication
+    title: {
+      text: `${symbol} Candlestick Chart`,
+      align: 'left',
+      style: {
+        fontSize: '18px',
+        fontWeight: 'bold',
+        color: '#ffffff'
+      }
+    },
+    subtitle: {
+      text: subtitle,
+      align: 'left',
+      style: {
+        fontSize: '14px',
+        color: '#94a3b8'
+      }
+    },
     xaxis: {
       type: 'datetime',
       labels: {
@@ -364,8 +227,8 @@ const CandlestickChart = ({
           return `₹${val.toFixed(2)}`;
         }
       },
-      min: priceRange.min,
-      max: priceRange.max
+      min: yAxisRange.min,
+      max: yAxisRange.max
     },
     grid: {
       borderColor: '#374151',
@@ -392,192 +255,76 @@ const CandlestickChart = ({
         }
       }
     },
-    colors: [
-      '#22c55e', '#ef4444', // Candlestick colors (green/red)
-      ...Array(chartData.indicatorSeries.length).fill(0).map((_, i) => 
-        ['#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'][i % 5]
-      ),
-      ...chartData.crossoverMarkers.map(marker => marker.config.color)
-    ],
-    stroke: {
-      width: [
-        0, // No stroke for candlesticks
-        ...Array(chartData.indicatorSeries.length).fill(2),
-        ...Array(chartData.crossoverMarkers.length).fill(0) // No stroke for scatter markers
-      ]
-    },
-    markers: {
-      size: [
-        0, // No markers for candlesticks
-        ...Array(chartData.indicatorSeries.length).fill(0), // No markers for lines
-        ...Array(chartData.crossoverMarkers.length).fill(15) // Larger arrow markers for crossover signals
-      ],
-      colors: [
-        '#ffffff', // candlestick (not used)
-        ...Array(chartData.indicatorSeries.length).fill('#ffffff'), // indicators
-        ...chartData.crossoverMarkers.map(marker => marker.config.color) // filled arrow colors
-      ],
-      strokeColors: [
-        '#22c55e',
-        ...Array(chartData.indicatorSeries.length).fill(0).map((_, i) => 
-          ['#3b82f6', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899'][i % 5]
-        ),
-        ...chartData.crossoverMarkers.map(marker => marker.config.color) // arrow border colors
-      ],
-      strokeWidth: [
-        0,
-        ...Array(chartData.indicatorSeries.length).fill(2),
-        ...Array(chartData.crossoverMarkers.length).fill(2) // Stroke for crossover arrow markers
-      ],
-      hover: {
-        size: [
-          0,
-          ...Array(chartData.indicatorSeries.length).fill(0),
-          ...Array(chartData.crossoverMarkers.length).fill(20) // Larger hover for crossover arrow markers
-        ],
-        sizeOffset: 3
-      },
-      // Custom filled arrow shapes for crossover signals
-      shape: [
-        'circle', // candlestick (not used)
-        ...Array(chartData.indicatorSeries.length).fill('circle'), // indicators
-        ...chartData.crossoverMarkers.map(marker => 
-          marker.config.markerType === 'arrow-up' ? 'triangle' : 'invertedTriangle'
-        )
-      ],
-      // Make arrows fully filled with colors
-      fillOpacity: [
-        1, // candlestick
-        ...Array(chartData.indicatorSeries.length).fill(1), // indicators
-        ...Array(chartData.crossoverMarkers.length).fill(1) // fully filled arrows
-      ]
-    },
-    tooltip: {
-      theme: 'dark',
-      shared: true,
-      intersect: false,
-      style: {
-        fontSize: '12px'
-      },
-      custom: function({ series, seriesIndex, dataPointIndex, w }) {
-        // Handle candlestick data
-        if (seriesIndex === 0) {
-          const data = chartData.candlestickData[dataPointIndex];
-          if (!data) return '';
-          
-          const [open, high, low, close] = data.y;
-          const change = close - open;
-          const changePercent = ((change / open) * 100).toFixed(2);
-          const date = format(new Date(data.x), 'MMM dd, yyyy');
-          
-          // Show technical indicators at this point
-          let indicatorInfo = '';
-          chartData.indicatorSeries.forEach((indicator, idx) => {
-            const indicatorPoint = indicator.data.find(point => 
-              Math.abs(point.x - data.x) < 86400000 // Within same day
-            );
-            if (indicatorPoint) {
-              indicatorInfo += `
-                <div style="color: #94a3b8;">
-                  ${indicator.name}: <span style="color: ${w.globals.colors[idx + 1]}; font-weight: 500;">
-                    ₹${indicatorPoint.y.toFixed(2)}
-                  </span>
-                </div>
-              `;
-            }
-          });
-          
-          return `
-            <div class="apexcharts-tooltip-candlestick" style="padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 8px;">
-              <div style="color: #60a5fa; font-weight: bold; margin-bottom: 8px;">${date}</div>
-              <div style="display: grid; gap: 4px;">
-                <div style="color: #94a3b8;">Open: <span style="color: #ffffff; font-weight: 500;">₹${open.toFixed(2)}</span></div>
-                <div style="color: #94a3b8;">High: <span style="color: #22c55e; font-weight: 500;">₹${high.toFixed(2)}</span></div>
-                <div style="color: #94a3b8;">Low: <span style="color: #ef4444; font-weight: 500;">₹${low.toFixed(2)}</span></div>
-                <div style="color: #94a3b8;">Close: <span style="color: #ffffff; font-weight: 500;">₹${close.toFixed(2)}</span></div>
-                ${indicatorInfo}
-                <div style="color: #94a3b8; margin-top: 8px; padding-top: 8px; border-top: 1px solid #374151;">
-                  <div style="color: #06b6d4; font-weight: bold; margin-bottom: 4px;">Crossover Signals:</div>
-                  ${chartData.crossoverMarkers.length > 0 ? chartData.crossoverMarkers.map(markerSeries => {
-                    const signalAtThisPoint = markerSeries.data.find(point => Math.abs(point.x - data.x) < 86400000);
-                    return signalAtThisPoint ? `
-                      <div style="color: #94a3b8; font-size: 11px;">
-                        <span style="color: ${markerSeries.config.color}; font-weight: 500;">
-                          ${markerSeries.config.markerType === 'arrow-up' ? '▲' : '▼'} ${markerSeries.name}
-                        </span>
-                      </div>
-                    ` : '';
-                  }).join('') : '<div style="color: #94a3b8; font-size: 11px;">No signals at this point</div>'}
-                </div>
-                <div style="color: #94a3b8; margin-top: 4px; padding-top: 4px; border-top: 1px solid #374151;">
-                  Change: <span style="color: ${change >= 0 ? '#22c55e' : '#ef4444'}; font-weight: 500;">
-                    ${change >= 0 ? '+' : ''}₹${change.toFixed(2)} (${change >= 0 ? '+' : ''}${changePercent}%)
-                  </span>
-                </div>
-              </div>
-            </div>
-          `;
-        }
-        return '';
-      }
+    dataLabels: {
+      enabled: false
     },
     legend: {
-      show: chartData.indicatorSeries.length > 0,
+      show: true,
       position: 'top',
+      horizontalAlign: 'right',
       labels: {
         colors: '#94a3b8'
       }
     },
-    // Add vertical text labels for crossover signals
-    annotations: {
-      points: chartData.crossoverMarkers.flatMap(markerSeries => 
-        markerSeries.data.map(point => ({
-          x: point.x,
-          y: point.y,
-          marker: {
-            size: 0 // Hide the annotation marker since we have custom arrows
-          },
-          label: {
-            text: markerSeries.config.label.split(' ')[0], // First part of label (e.g., "Bull", "Bear")
-            borderColor: markerSeries.config.color,
-            borderWidth: 1,
-            borderRadius: 3,
-            background: markerSeries.config.color,
-            color: '#ffffff',
-            fontSize: '10px',
-            fontWeight: 'bold',
-            padding: {
-              left: 4,
-              right: 4,
-              top: 2,
-              bottom: 2
-            },
-            orientation: 'vertical', // Vertical text
-            offsetY: markerSeries.config.markerType === 'arrow-up' ? -25 : 25, // Position above/below arrow
-            offsetX: 0,
-            style: {
-              background: markerSeries.config.color,
-              color: '#ffffff',
-              fontSize: '10px',
-              fontWeight: 'bold'
-            }
-          }
-        }))
-      )
+    tooltip: {
+      enabled: true,
+      theme: 'dark',
+      style: {
+        fontSize: '12px'
+      },
+      custom: function({ seriesIndex, dataPointIndex, w }) {
+        const data = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
+        if (!data) return '';
+
+        // Handle candlestick data
+        if (seriesIndex === 0 && data.originalData) {
+          const item = data.originalData;
+          return `
+            <div class="apexcharts-tooltip-candlestick" style="padding: 12px; background: #1f2937; border: 1px solid #374151; border-radius: 8px;">
+              <div style="color: #06b6d4; font-weight: bold; margin-bottom: 8px;">
+                ${format(new Date(data.x), 'MMM dd, yyyy')}
+              </div>
+              <div style="color: #ffffff; line-height: 1.5;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #94a3b8;">Open:</span>
+                  <span style="color: #06b6d4; font-weight: 500;">₹${parseFloat(item.OPEN_PRICE).toFixed(2)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #94a3b8;">High:</span>
+                  <span style="color: #22c55e; font-weight: 500;">₹${parseFloat(item.HIGH_PRICE).toFixed(2)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #94a3b8;">Low:</span>
+                  <span style="color: #ef4444; font-weight: 500;">₹${parseFloat(item.LOW_PRICE).toFixed(2)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #94a3b8;">Close:</span>
+                  <span style="color: #06b6d4; font-weight: 500;">₹${parseFloat(item.CLOSE_PRICE).toFixed(2)}</span>
+                </div>
+                ${item.VOLUME ? `
+                <div style="display: flex; justify-content: space-between; margin-top: 4px; padding-top: 4px; border-top: 1px solid #374151;">
+                  <span style="color: #94a3b8;">Volume:</span>
+                  <span style="color: #a78bfa; font-weight: 500;">${parseInt(item.VOLUME).toLocaleString()}</span>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }
+
+        return '';
+      }
     }
   };
 
+  // Series data for ApexCharts
   const series = [
     {
-      name: 'Candlestick',
+      name: 'OHLC',
       type: 'candlestick',
       data: chartData.candlestickData
     },
-    ...chartData.indicatorSeries.map(indicator => ({
-      name: indicator.name,
-      type: 'line',
-      data: indicator.data
-    })),
+    ...chartData.indicatorSeries,
     ...chartData.crossoverMarkers.map(marker => ({
       name: marker.name,
       type: 'scatter',
@@ -588,13 +335,12 @@ const CandlestickChart = ({
   // Loading state
   if (loading) {
     return (
-      <div 
-        className="flex items-center justify-center bg-gray-900 rounded-lg"
-        style={{ height: `${height}px`, ...style }}
-      >
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading candlestick chart...</p>
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700 p-6" style={style}>
+        <div className="flex items-center justify-center" style={{ height: height }}>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading candlestick chart...</p>
+          </div>
         </div>
       </div>
     );
@@ -603,44 +349,35 @@ const CandlestickChart = ({
   // No data state
   if (!data || data.length === 0 || chartData.candlestickData.length === 0) {
     return (
-      <div 
-        className="flex items-center justify-center bg-gray-900 rounded-lg border border-gray-700"
-        style={{ height: `${height}px`, ...style }}
-      >
-        <div className="text-center">
-          <div className="text-gray-500 text-4xl mb-4">📈</div>
-          <p className="text-gray-400 text-lg">No candlestick data available</p>
-          <p className="text-gray-500 text-sm mt-2">
-            Please select a symbol and date range with valid OHLC data
-          </p>
+      <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700 p-6" style={style}>
+        <div className="flex items-center justify-center" style={{ height: height }}>
+          <div className="text-center">
+            <div className="text-6xl mb-4">📊</div>
+            <h3 className="text-xl font-semibold text-white mb-2">No Candlestick Data Available</h3>
+            <p className="text-gray-400 text-lg">No candlestick data available</p>
+            <p className="text-gray-500 text-sm mt-2">Select a different symbol or date range</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div 
-      className="bg-gray-900 rounded-lg p-4 border border-gray-700"
-      style={{ ...style }}
-    >
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700 p-6" style={style}>
       {/* Chart Header */}
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h3 className="text-white text-lg font-semibold">
-            {symbol ? `${symbol} Candlestick Chart` : 'Candlestick Chart'}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold text-white">
+            {symbol} Candlestick Analysis
           </h3>
-          {/* Stock Information Subtitle */}
-          {formatStockInfoSubtitle && (
-            <p className="text-slate-400 text-sm mb-1">
-              {formatStockInfoSubtitle}
-            </p>
-          )}
-          <p className="text-gray-400 text-sm">
+          <div className="text-sm text-slate-400">
             {chartData.candlestickData.length} candles • OHLC Data
-            {selectedIndicators.length > 0 && ` • ${selectedIndicators.length} indicators`}
-          </p>
+          </div>
         </div>
-        <div className="flex items-center space-x-4 text-sm">
+        <p className="text-sm text-slate-400">
+          {subtitle}
+        </p>
+        <div className="flex items-center space-x-4 text-sm mt-2">
           <div className="flex items-center">
             <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
             <span className="text-gray-300">Bullish</span>
@@ -655,13 +392,16 @@ const CandlestickChart = ({
         </div>
       </div>
 
-      {/* ApexCharts Candlestick Chart */}
-      <Chart
-        options={chartOptions}
-        series={series}
-        type="candlestick"
-        height={height}
-      />
+      {/* TradingView-style Candlestick Chart */}
+      <div className="w-full" style={{ minHeight: height }}>
+        <Chart
+          options={chartOptions}
+          series={series}
+          type="candlestick"
+          height={height}
+          width="100%"
+        />
+      </div>
 
       {/* Chart Footer */}
       <div className="mt-4 text-xs text-gray-500 border-t border-gray-700 pt-3">
@@ -671,6 +411,9 @@ const CandlestickChart = ({
             `${format(new Date(chartData.candlestickData[0].x), 'MMM dd, yyyy')} - ${format(new Date(chartData.candlestickData[chartData.candlestickData.length - 1].x), 'MMM dd, yyyy')}` 
             : 'No data'
           }</span>
+        </div>
+        <div className="mt-2 text-center">
+          <span className="text-slate-500">Professional candlestick analysis powered by ApexCharts</span>
         </div>
       </div>
     </div>

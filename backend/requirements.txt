@@ -8,3 +8,7 @@ passlib[bcrypt]==1.7.4
 python-dotenv==1.0.1
 pyarrow==18.1.0
 requests==2.32.3
+mysql-connector-python==8.0.33
+cloud-sql-python-connector[pymysql]==1.2.3
+sqlalchemy==2.0.15
+pymysql==1.0.3

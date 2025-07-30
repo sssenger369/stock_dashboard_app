@@ -17,7 +17,7 @@ function App() {
   const [fullDatasetRange, setFullDatasetRange] = useState({ min: null, max: null }); // Fixed dataset boundaries
 
   // FastAPI backend URL - uses environment variable for production
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://stock-dashboard-app-9zp2.onrender.com';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://stock-dashboard-8880484803.us-central1.run.app';
   
   // Add data cache and loading state management
   const dataCache = useRef(new Map());
