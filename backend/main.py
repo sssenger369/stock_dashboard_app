@@ -309,22 +309,25 @@ async def get_stock_data(
                     'CLOSE_PRICE': None
                 })
         
-        # Smart sampling for better candlestick visibility while preserving recent data
-        if len(records) > 150:
-            # Always keep the most recent 50 records
-            recent_records = records[-50:]
-            older_records = records[:-50]
+        # Gentle sampling only for very large datasets to maintain data continuity
+        if len(records) > 500:  # Only sample if we have more than 500 records
+            # Keep more data for better candlestick continuity
+            # Always keep the most recent 200 records (about 8 months of trading data)
+            recent_records = records[-200:]
+            older_records = records[:-200]
             
-            # Sample older records more aggressively
-            if len(older_records) > 50:
-                sample_rate = max(1, len(older_records) // 50)
+            # Much gentler sampling of older records - only reduce by half at most
+            if len(older_records) > 200:
+                sample_rate = max(2, len(older_records) // 200)  # Max sample rate of 2 (keep every 2nd record)
                 sampled_older = older_records[::sample_rate]
             else:
                 sampled_older = older_records
             
             # Combine sampled older data with all recent data
             records = sampled_older + recent_records
-            print(f"📊 Smart sampling: {len(sampled_older)} older + {len(recent_records)} recent = {len(records)} total records")
+            print(f"📊 Gentle sampling: {len(sampled_older)} older + {len(recent_records)} recent = {len(records)} total records")
+        else:
+            print(f"📊 No sampling needed: {len(records)} records (under 500 limit)")
         
         print(f"✅ Generated comprehensive data with {len(records)} records and 20+ indicators for {symbol}!")
         return records
