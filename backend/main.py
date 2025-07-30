@@ -230,20 +230,24 @@ async def get_stock_data(
                 random.seed(hash(f"{symbol}-{row['timestamp']}"))  # Consistent randomization
                 variation = 0.04  # 4% max variation for better candlestick visibility
                 
-                # Create proper OHLC with significant wicks
-                high_variation = random.uniform(0.01, variation)  # 1-4% above close
-                low_variation = random.uniform(0.01, variation)   # 1-4% below close
+                # Create proper OHLC with visible wicks extending beyond body
                 open_variation = random.uniform(-variation/2, variation/2)  # ±2% from close
-                
-                high_price = close_price * (1 + high_variation)
-                low_price = close_price * (1 - low_variation)
                 open_price = close_price * (1 + open_variation)
                 
-                # Ensure logical OHLC relationships
-                # High should be the maximum of all prices
-                high_price = max(high_price, open_price, close_price)
-                # Low should be the minimum of all prices  
-                low_price = min(low_price, open_price, close_price)
+                # Create wicks that extend beyond the open/close body
+                body_high = max(open_price, close_price)
+                body_low = min(open_price, close_price)
+                
+                # Wicks extend beyond the candle body
+                wick_extension = random.uniform(0.005, 0.02)  # 0.5-2% wick extension
+                high_price = body_high * (1 + wick_extension)  # Upper wick
+                low_price = body_low * (1 - wick_extension)    # Lower wick
+                
+                # Sometimes add longer wicks for realism
+                if random.random() < 0.3:  # 30% chance of longer wicks
+                    high_price = body_high * (1 + random.uniform(0.02, 0.04))  # 2-4% upper wick
+                if random.random() < 0.3:  # 30% chance of longer wicks  
+                    low_price = body_low * (1 - random.uniform(0.02, 0.04))    # 2-4% lower wick
                 
                 # Comprehensive record with all expected fields
                 record = {
@@ -305,12 +309,22 @@ async def get_stock_data(
                     'CLOSE_PRICE': None
                 })
         
-        # Sample data for better candlestick visibility (reduce density)
-        # For more than 100 records, sample every nth record to avoid overcrowding
-        if len(records) > 100:
-            sample_rate = max(1, len(records) // 100)  # Max 100 candlesticks
-            records = records[::sample_rate]
-            print(f"📊 Sampled {len(records)} records (every {sample_rate}) for better candlestick visibility")
+        # Smart sampling for better candlestick visibility while preserving recent data
+        if len(records) > 150:
+            # Always keep the most recent 50 records
+            recent_records = records[-50:]
+            older_records = records[:-50]
+            
+            # Sample older records more aggressively
+            if len(older_records) > 50:
+                sample_rate = max(1, len(older_records) // 50)
+                sampled_older = older_records[::sample_rate]
+            else:
+                sampled_older = older_records
+            
+            # Combine sampled older data with all recent data
+            records = sampled_older + recent_records
+            print(f"📊 Smart sampling: {len(sampled_older)} older + {len(recent_records)} recent = {len(records)} total records")
         
         print(f"✅ Generated comprehensive data with {len(records)} records and 20+ indicators for {symbol}!")
         return records
