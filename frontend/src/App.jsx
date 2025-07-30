@@ -19,6 +19,11 @@ function App() {
   // FastAPI backend URL - uses environment variable for production
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://stock-dashboard-8880484803.us-central1.run.app';
   
+  // Debug logging
+  console.log('🔗 API_BASE_URL:', API_BASE_URL);
+  console.log('🔧 VITE_API_BASE_URL env var:', import.meta.env.VITE_API_BASE_URL);
+  console.log('🌐 All env vars:', import.meta.env);
+  
   // Add data cache and loading state management
   const dataCache = useRef(new Map());
   const loadingRef = useRef(false);
@@ -28,7 +33,9 @@ function App() {
   const loadSymbols = async () => {
     setSymbolsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/symbols`);
+      const url = `${API_BASE_URL}/symbols`;
+      console.log('🚀 Fetching symbols from:', url);
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch symbols: ${response.status}`);
@@ -72,13 +79,17 @@ function App() {
         const startDateStr = start.toISOString().split('T')[0];
         const endDateStr = end.toISOString().split('T')[0];
         apiUrl += `&start_date=${startDateStr}&end_date=${endDateStr}`;
-        console.log(`Fetching data for ${symbol} from ${startDateStr} to ${endDateStr}`);
+        console.log(`📈 Fetching data for ${symbol} from ${startDateStr} to ${endDateStr}`);
       } else {
-        console.log(`Fetching ALL data for ${symbol}`);
+        console.log(`📈 Fetching ALL data for ${symbol}`);
       }
+      
+      console.log('🔗 Stock data API URL:', apiUrl);
+      console.log('🌐 Using API base:', API_BASE_URL);
       
       // Call your FastAPI endpoint
       const response = await fetch(apiUrl);
+      console.log('📡 Stock data response status:', response.status);
       
       if (!response.ok) {
         if (response.status === 404) {
