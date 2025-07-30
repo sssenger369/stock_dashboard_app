@@ -15,7 +15,6 @@ import {
 import CandlestickChart from './CandlestickChart';
 import StockPriceChart from './StockPriceChart';
 import MultiFieldChart from './MultiFieldChart';
-import LazyLoadingChart from './LazyLoadingChart';
 
 function ProfessionalStockDashboard({ 
   symbols = [], 
@@ -666,7 +665,6 @@ function ProfessionalStockDashboard({
             <div className="flex space-x-1 bg-slate-800/30 p-1 rounded-xl">
               {[
                 { id: 'overview', label: 'Overview', icon: Activity },
-                { id: 'lazy', label: 'TradingView Style', icon: BarChart3 },
                 { id: 'fields', label: 'Volume Analysis', icon: Target },
                 { id: 'analysis', label: 'Analysis', icon: TrendingUp },
                 { id: 'alerts', label: 'Alerts', icon: AlertCircle }
@@ -882,33 +880,6 @@ function ProfessionalStockDashboard({
             </div>
           )}
 
-          {/* TradingView-style Lazy Loading Tab */}
-          {activeTab === 'lazy' && (
-            <div className="space-y-6">
-              <div className="bg-slate-800/30 backdrop-blur-lg rounded-xl border border-slate-700/50 p-4 mb-6">
-                <div className="flex items-center space-x-3 mb-3">
-                  <BarChart3 className="w-5 h-5 text-blue-400" />
-                  <h3 className="text-lg font-semibold text-white">TradingView-Style Lazy Loading</h3>
-                </div>
-                <p className="text-slate-400 text-sm">
-                  Progressive data loading with viewport-based fetching. Zoom and pan to automatically load more data.
-                </p>
-                <div className="flex flex-wrap gap-2 mt-3 text-xs">
-                  <span className="bg-blue-500/20 text-blue-300 px-2 py-1 rounded">🔄 Progressive Loading</span>
-                  <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded">🎯 Viewport-Based</span>
-                  <span className="bg-purple-500/20 text-purple-300 px-2 py-1 rounded">📦 Smart Caching</span>
-                  <span className="bg-orange-500/20 text-orange-300 px-2 py-1 rounded">⚡ High Performance</span>
-                </div>
-              </div>
-              
-              <LazyLoadingChart
-                symbol={selectedSymbol}
-                height={600}
-                selectedIndicators={selectedIndicators}
-                apiBaseUrl='http://127.0.0.1:8006'
-              />
-            </div>
-          )}
 
           {/* Volume Analysis Tab */}
           {activeTab === 'fields' && (

@@ -185,7 +185,9 @@ async def get_stock_data(
     start_date: str = None,
     end_date: str = None,
     frequency: str = "Daily",
-    zscore_window: int = 30
+    zscore_window: int = 30,
+    max_records: int = 2000,  # Allow more records
+    enable_sampling: bool = True  # Allow disabling sampling
 ):
     """
     Returns comprehensive stock data with ALL technical indicators
@@ -309,21 +311,25 @@ async def get_stock_data(
                 }
                 records.append(record)
         
-        # Gentle sampling for large datasets
-        if len(records) > 500:
-            recent_records = records[-200:]
-            older_records = records[:-200]
+        # Optional sampling for large datasets
+        if enable_sampling and len(records) > max_records:
+            # Keep more recent data (last 30% of records)
+            recent_count = max(200, int(len(records) * 0.3))
+            recent_records = records[-recent_count:]
+            older_records = records[:-recent_count]
             
-            if len(older_records) > 200:
-                sample_rate = max(2, len(older_records) // 200)
+            # Sample older records to fit within max_records limit
+            target_older_count = max_records - recent_count
+            if len(older_records) > target_older_count and target_older_count > 0:
+                sample_rate = max(2, len(older_records) // target_older_count)
                 sampled_older = older_records[::sample_rate]
             else:
-                sampled_older = older_records
+                sampled_older = older_records[:target_older_count] if target_older_count > 0 else []
             
             records = sampled_older + recent_records
-            print(f"[SAMPLING] Sampled to {len(records)} total records")
+            print(f"[SAMPLING] Sampled to {len(records)} total records (recent: {len(recent_records)}, older: {len(sampled_older)})")
         else:
-            print(f"[SAMPLING] No sampling needed: {len(records)} records")
+            print(f"[SAMPLING] No sampling - returning all {len(records)} records")
         
         print(f"[OK] Generated comprehensive data with {len(records)} records for {symbol}")
         return records
@@ -334,93 +340,7 @@ async def get_stock_data(
         print(f"Error loading stock data: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to load data for {symbol}: {str(e)}")
 
-@app.get("/stock_data/{symbol}/latest")
-async def get_latest_stock_data(symbol: str, days: int = 100):
-    """
-    Get the most recent N days of data for initial chart load
-    """
-    try:
-        connection = get_db_connection()
-        if not connection:
-            raise HTTPException(status_code=500, detail="Database connection failed")
-        
-        cursor = connection.cursor(dictionary=True)
-        
-        # Get latest N days
-        query = """
-        SELECT timestamp, symbol, close_price 
-        FROM stock_data 
-        WHERE symbol = %s 
-        ORDER BY timestamp DESC
-        LIMIT %s
-        """
-        
-        print(f"[LOADING] Latest {days} days for {symbol}")
-        cursor.execute(query, [symbol, days])
-        rows = cursor.fetchall()
-        
-        cursor.close()
-        connection.close()
-        
-        if not rows:
-            raise HTTPException(status_code=404, detail=f"No recent data found for {symbol}")
-        
-        # Sort by timestamp ascending for chart display
-        rows.sort(key=lambda x: x['timestamp'])
-        
-        # Use the same processing as main endpoint
-        close_prices = [float(row['close_price']) for row in rows if row['close_price']]
-        indicators = calculate_technical_indicators(pd.DataFrame(rows), close_prices)
-        
-        # Process records (same logic as main endpoint)
-        records = []
-        for i, row in enumerate(rows):
-            close_price = float(row['close_price']) if row['close_price'] else None
-            if close_price:
-                # Generate OHLC (same logic as main endpoint)
-                random.seed(hash(f"{symbol}-{row['timestamp']}"))
-                variation = 0.04
-                
-                open_variation = random.uniform(-variation/2, variation/2)
-                open_price = close_price * (1 + open_variation)
-                
-                body_high = max(open_price, close_price)
-                body_low = min(open_price, close_price)
-                
-                wick_extension = random.uniform(0.005, 0.02)
-                high_price = body_high * (1 + wick_extension)
-                low_price = body_low * (1 - wick_extension)
-                
-                if random.random() < 0.3:
-                    high_price = body_high * (1 + random.uniform(0.02, 0.04))
-                if random.random() < 0.3:
-                    low_price = body_low * (1 - random.uniform(0.02, 0.04))
-                
-                record = {
-                    'TIMESTAMP': row['timestamp'].isoformat(),
-                    'SYMBOL': row['symbol'],
-                    'CLOSE_PRICE': close_price,
-                    'OPEN_PRICE': round(open_price, 2),
-                    'HIGH_PRICE': round(high_price, 2), 
-                    'LOW_PRICE': round(low_price, 2),
-                    # Add all technical indicators (simplified for latest endpoint)
-                    'ROLLING_MEDIAN': round(indicators['ROLLING_MEDIAN'][i], 2) if i < len(indicators['ROLLING_MEDIAN']) else close_price,
-                    'PP': round(indicators['PP'][i], 2) if i < len(indicators['PP']) else close_price,
-                    'EMA_63': round(indicators['EMA_63'][i], 2) if i < len(indicators['EMA_63']) else close_price,
-                    'EMA_144': round(indicators['EMA_144'][i], 2) if i < len(indicators['EMA_144']) else close_price,
-                    'EMA_234': round(indicators['EMA_234'][i], 2) if i < len(indicators['EMA_234']) else close_price,
-                }
-                records.append(record)
-        
-        print(f"[OK] Loaded latest {len(records)} records for {symbol}")
-        return records
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error loading latest data: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to load latest data: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8006)
+    uvicorn.run(app, host="0.0.0.0", port=8008)

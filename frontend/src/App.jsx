@@ -16,8 +16,8 @@ function App() {
   const [dataDateRange, setDataDateRange] = useState({ min: null, max: null });
   const [fullDatasetRange, setFullDatasetRange] = useState({ min: null, max: null }); // Fixed dataset boundaries
 
-  // FastAPI backend URL - REAL DATABASE with 3,621 symbols  
-  const API_BASE_URL = 'http://127.0.0.1:8006';
+  // FastAPI backend URL - REAL DATABASE with FULL data access (no sampling)
+  const API_BASE_URL = 'http://127.0.0.1:8008';
   
   // Debug logging
   console.log('🔗 API_BASE_URL:', API_BASE_URL);
@@ -72,16 +72,16 @@ function App() {
     setDataError(null);
     
     try {
-      let apiUrl = `${API_BASE_URL}/stock_data/${symbol}?frequency=Daily`;
+      let apiUrl = `${API_BASE_URL}/stock_data/${symbol}?frequency=Daily&max_records=5000&enable_sampling=false`;
       
       if (!loadAll) {
         // Format dates for API (YYYY-MM-DD)
         const startDateStr = start.toISOString().split('T')[0];
         const endDateStr = end.toISOString().split('T')[0];
         apiUrl += `&start_date=${startDateStr}&end_date=${endDateStr}`;
-        console.log(`📈 Fetching data for ${symbol} from ${startDateStr} to ${endDateStr}`);
+        console.log(`📈 Fetching data for ${symbol} from ${startDateStr} to ${endDateStr} (max_records=5000, no sampling)`);
       } else {
-        console.log(`📈 Fetching ALL data for ${symbol}`);
+        console.log(`📈 Fetching ALL data for ${symbol} (max_records=5000, no sampling)`);
       }
       
       console.log('🔗 Stock data API URL:', apiUrl);
