@@ -2,8 +2,46 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { format, parseISO, isValid, subDays, addDays } from 'date-fns';
 
-// Lazy load ApexCharts to avoid SSR issues
-const Chart = React.lazy(() => import('react-apexcharts'));
+// Import ApexCharts directly to avoid lazy loading issues
+import Chart from 'react-apexcharts';
+
+// Error Boundary Component
+class ChartErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Chart Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center" style={{ height: this.props.height || 500 }}>
+          <div className="text-center">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h3 className="text-xl font-semibold text-white mb-2">Chart Error</h3>
+            <p className="text-red-400 text-sm">ApexCharts rendering failed</p>
+            <button 
+              onClick={() => this.setState({ hasError: false, error: null })}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 /**
  * TradingView-style Lazy Loading Candlestick Chart Component
@@ -229,6 +267,16 @@ const LazyLoadingChart = ({
     }
   }, [symbol, loadInitialData]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Clear any pending timeouts or requests
+      if (dataCache.current) {
+        dataCache.current.clear();
+      }
+    };
+  }, []);
+
   // Transform data for ApexCharts
   const processedChartData = useMemo(() => {
     if (!chartData || chartData.length === 0) return { candlestickData: [], indicatorSeries: [] };
@@ -298,8 +346,8 @@ const LazyLoadingChart = ({
     };
   }, [processedChartData.candlestickData]);
 
-  // TradingView-style chart configuration
-  const chartOptions = {
+  // TradingView-style chart configuration - memoized for stability
+  const chartOptions = useMemo(() => ({
     chart: {
       type: 'candlestick',
       height: height,
@@ -473,17 +521,17 @@ const LazyLoadingChart = ({
         return '';
       }
     }
-  };
+  }), [height, yAxisRange.min, yAxisRange.max, processedChartData.candlestickData.length]);
 
-  // Series data for ApexCharts
-  const series = [
+  // Series data for ApexCharts - memoized for stability
+  const series = useMemo(() => [
     {
       name: 'OHLC',
       type: 'candlestick',
       data: processedChartData.candlestickData
     },
     ...processedChartData.indicatorSeries
-  ];
+  ], [processedChartData.candlestickData, processedChartData.indicatorSeries]);
 
   // Loading state
   if (loading && chartData.length === 0) {
@@ -565,25 +613,17 @@ const LazyLoadingChart = ({
 
       {/* TradingView-style Lazy Loading Chart */}
       <div className="w-full" style={{ minHeight: height }}>
-        <React.Suspense 
-          fallback={
-            <div className="flex items-center justify-center" style={{ height: height }}>
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p className="text-gray-400">Loading chart component...</p>
-              </div>
-            </div>
-          }
-        >
-          <Chart
-            ref={chartRef}
-            options={chartOptions}
-            series={series}
-            type="candlestick"
-            height={height}
-            width="100%"
-          />
-        </React.Suspense>
+        <ChartErrorBoundary height={height}>
+          <div key={`chart-${symbol}-${chartData.length}`} className="chart-container">
+            <Chart
+              options={chartOptions}
+              series={series}
+              type="candlestick"
+              height={height}
+              width="100%"
+            />
+          </div>
+        </ChartErrorBoundary>
       </div>
 
       {/* Chart Footer */}

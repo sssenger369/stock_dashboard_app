@@ -16,8 +16,8 @@ function App() {
   const [dataDateRange, setDataDateRange] = useState({ min: null, max: null });
   const [fullDatasetRange, setFullDatasetRange] = useState({ min: null, max: null }); // Fixed dataset boundaries
 
-  // FastAPI backend URL - uses environment variable for production
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://stock-dashboard-8880484803.us-central1.run.app';
+  // FastAPI backend URL - REAL DATABASE with 3,621 symbols  
+  const API_BASE_URL = 'http://127.0.0.1:8006';
   
   // Debug logging
   console.log('🔗 API_BASE_URL:', API_BASE_URL);

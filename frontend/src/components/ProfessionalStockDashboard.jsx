@@ -905,7 +905,7 @@ function ProfessionalStockDashboard({
                 symbol={selectedSymbol}
                 height={600}
                 selectedIndicators={selectedIndicators}
-                apiBaseUrl={window.location.origin.includes('localhost') ? 'http://127.0.0.1:8000' : 'https://stock-dashboard-8880484803.us-central1.run.app'}
+                apiBaseUrl='http://127.0.0.1:8006'
               />
             </div>
           )}

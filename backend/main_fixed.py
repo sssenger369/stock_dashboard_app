@@ -8,18 +8,32 @@ from functools import lru_cache
 import numpy as np
 import random
 import math
-from config import settings
 
 app = FastAPI(
-    title="Stock Dashboard API - Comprehensive Version",
-    description="FastAPI backend with all technical indicators",
-    version="3.0.0"
+    title="Stock Dashboard API - Fixed Version",
+    description="FastAPI backend with all technical indicators - no encoding issues",
+    version="3.1.0"
 )
 
-# --- CORS Configuration ---
+# --- CORS Configuration - ALLOW ALL LOCALHOST PORTS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS + ["*"],
+    allow_origins=[
+        "http://localhost:5181",
+        "http://127.0.0.1:5181",
+        "http://localhost:5180", 
+        "http://localhost:5179",
+        "http://localhost:5178",
+        "http://localhost:5177",
+        "http://localhost:5176",
+        "http://localhost:5175",
+        "http://localhost:5174",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://stock-dashboard-93bsuyrcd-sanjay-singhs-projects-933bcc33.vercel.app",
+        "*"  # Allow all for development
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -89,9 +103,6 @@ def calculate_technical_indicators(df, close_prices):
     tc = prices.rolling(window=20, min_periods=1).max() * 1.05  # Top Channel
     
     # Calculate EMA Crossover Signals
-    # Bullish crossover occurs when faster EMA crosses above slower EMA
-    # Bearish crossover occurs when faster EMA crosses below slower EMA
-    
     def calculate_crossover_signals(fast_ema, slow_ema):
         """Calculate bullish and bearish crossover signals"""
         bull_signals = []
@@ -144,7 +155,7 @@ def calculate_technical_indicators(df, close_prices):
 
 @app.get("/")
 async def read_root():
-    return {"message": "Stock Data API - Comprehensive Version", "records": "2,527,425", "symbols": "3,621", "indicators": "20+"}
+    return {"message": "Stock Data API - Fixed Version", "records": "2,527,425", "symbols": "3,621", "indicators": "20+"}
 
 @app.get("/symbols")
 async def get_symbols():
@@ -161,7 +172,7 @@ async def get_symbols():
         cursor.close()
         connection.close()
         
-        print(f"[OK] Loaded {len(symbols)} symbols instantly from SQL")
+        print(f"[OK] Loaded {len(symbols)} symbols from database")
         return symbols
         
     except Exception as e:
@@ -205,7 +216,7 @@ async def get_stock_data(
         
         base_query += " ORDER BY timestamp"
         
-        print(f"[INFO] Loading data for {symbol} from SQL...")
+        print(f"[INFO] Loading data for {symbol} from database")
         cursor.execute(base_query, params)
         rows = cursor.fetchall()
         
@@ -226,28 +237,24 @@ async def get_stock_data(
         for i, row in enumerate(rows):
             close_price = float(row['close_price']) if row['close_price'] else None
             if close_price:
-                # Generate realistic OHLC from close price with proper candlestick visibility
+                # Generate realistic OHLC from close price
                 random.seed(hash(f"{symbol}-{row['timestamp']}"))  # Consistent randomization
-                variation = 0.04  # 4% max variation for better candlestick visibility
+                variation = 0.04  # 4% max variation
                 
-                # Create proper OHLC with visible wicks extending beyond body
-                open_variation = random.uniform(-variation/2, variation/2)  # ±2% from close
+                open_variation = random.uniform(-variation/2, variation/2)
                 open_price = close_price * (1 + open_variation)
                 
-                # Create wicks that extend beyond the open/close body
                 body_high = max(open_price, close_price)
                 body_low = min(open_price, close_price)
                 
-                # Wicks extend beyond the candle body
-                wick_extension = random.uniform(0.005, 0.02)  # 0.5-2% wick extension
-                high_price = body_high * (1 + wick_extension)  # Upper wick
-                low_price = body_low * (1 - wick_extension)    # Lower wick
+                wick_extension = random.uniform(0.005, 0.02)
+                high_price = body_high * (1 + wick_extension)
+                low_price = body_low * (1 - wick_extension)
                 
-                # Sometimes add longer wicks for realism
-                if random.random() < 0.3:  # 30% chance of longer wicks
-                    high_price = body_high * (1 + random.uniform(0.02, 0.04))  # 2-4% upper wick
-                if random.random() < 0.3:  # 30% chance of longer wicks  
-                    low_price = body_low * (1 - random.uniform(0.02, 0.04))    # 2-4% lower wick
+                if random.random() < 0.3:
+                    high_price = body_high * (1 + random.uniform(0.02, 0.04))
+                if random.random() < 0.3:
+                    low_price = body_low * (1 - random.uniform(0.02, 0.04))
                 
                 # Comprehensive record with all expected fields
                 record = {
@@ -301,35 +308,24 @@ async def get_stock_data(
                     'BearCross_63_234': indicators['BearCross_63_234'][i] if i < len(indicators['BearCross_63_234']) else 0,
                 }
                 records.append(record)
-            else:
-                # Minimal record for null close price
-                records.append({
-                    'TIMESTAMP': row['timestamp'].isoformat(),
-                    'SYMBOL': row['symbol'],
-                    'CLOSE_PRICE': None
-                })
         
-        # Gentle sampling only for very large datasets to maintain data continuity
-        if len(records) > 500:  # Only sample if we have more than 500 records
-            # Keep more data for better candlestick continuity
-            # Always keep the most recent 200 records (about 8 months of trading data)
+        # Gentle sampling for large datasets
+        if len(records) > 500:
             recent_records = records[-200:]
             older_records = records[:-200]
             
-            # Much gentler sampling of older records - only reduce by half at most
             if len(older_records) > 200:
-                sample_rate = max(2, len(older_records) // 200)  # Max sample rate of 2 (keep every 2nd record)
+                sample_rate = max(2, len(older_records) // 200)
                 sampled_older = older_records[::sample_rate]
             else:
                 sampled_older = older_records
             
-            # Combine sampled older data with all recent data
             records = sampled_older + recent_records
-            print(f"[SAMPLING] Gentle sampling: {len(sampled_older)} older + {len(recent_records)} recent = {len(records)} total records")
+            print(f"[SAMPLING] Sampled to {len(records)} total records")
         else:
-            print(f"[SAMPLING] No sampling needed: {len(records)} records (under 500 limit)")
+            print(f"[SAMPLING] No sampling needed: {len(records)} records")
         
-        print(f"[OK] Generated comprehensive data with {len(records)} records and 20+ indicators for {symbol}!")
+        print(f"[OK] Generated comprehensive data with {len(records)} records for {symbol}")
         return records
         
     except HTTPException:
@@ -337,149 +333,6 @@ async def get_stock_data(
     except Exception as e:
         print(f"Error loading stock data: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to load data for {symbol}: {str(e)}")
-
-@app.get("/stock_data/{symbol}/range")
-async def get_stock_data_range(
-    symbol: str,
-    start_date: str,
-    end_date: str,
-    limit: int = 200
-):
-    """
-    TradingView-style lazy loading endpoint
-    Returns stock data for a specific date range with limit
-    """
-    try:
-        connection = get_db_connection()
-        if not connection:
-            raise HTTPException(status_code=500, detail="Database connection failed")
-        
-        cursor = connection.cursor(dictionary=True)
-        
-        # Optimized query with date range and limit
-        query = """
-        SELECT timestamp, symbol, close_price 
-        FROM stock_data 
-        WHERE symbol = %s 
-        AND timestamp >= %s 
-        AND timestamp <= %s
-        ORDER BY timestamp DESC
-        LIMIT %s
-        """
-        
-        print(f"[LAZY] Loading: {symbol} from {start_date} to {end_date} (limit: {limit})")
-        cursor.execute(query, [symbol, start_date, end_date, limit])
-        rows = cursor.fetchall()
-        
-        cursor.close()
-        connection.close()
-        
-        if not rows:
-            return {"data": [], "count": 0, "range": {"start": start_date, "end": end_date}}
-        
-        # Sort by timestamp ascending for chart display
-        rows.sort(key=lambda x: x['timestamp'])
-        
-        # Extract close prices for technical indicator calculations
-        close_prices = [float(row['close_price']) for row in rows if row['close_price']]
-        
-        # Calculate technical indicators for this range
-        indicators = calculate_technical_indicators(pd.DataFrame(rows), close_prices)
-        
-        # Convert to comprehensive format
-        records = []
-        for i, row in enumerate(rows):
-            close_price = float(row['close_price']) if row['close_price'] else None
-            if close_price:
-                # Generate OHLC from close price
-                random.seed(hash(f"{symbol}-{row['timestamp']}"))
-                variation = 0.04
-                
-                open_variation = random.uniform(-variation/2, variation/2)
-                open_price = close_price * (1 + open_variation)
-                
-                body_high = max(open_price, close_price)
-                body_low = min(open_price, close_price)
-                
-                wick_extension = random.uniform(0.005, 0.02)
-                high_price = body_high * (1 + wick_extension)
-                low_price = body_low * (1 - wick_extension)
-                
-                if random.random() < 0.3:
-                    high_price = body_high * (1 + random.uniform(0.02, 0.04))
-                if random.random() < 0.3:
-                    low_price = body_low * (1 - random.uniform(0.02, 0.04))
-                
-                record = {
-                    'TIMESTAMP': row['timestamp'].isoformat(),
-                    'SYMBOL': row['symbol'],
-                    'SERIES': 'EQ',
-                    'CLOSE_PRICE': close_price,
-                    'OPEN_PRICE': round(open_price, 2),
-                    'HIGH_PRICE': round(high_price, 2), 
-                    'LOW_PRICE': round(low_price, 2),
-                    'LAST_PRICE': close_price,
-                    'AVG_PRICE': close_price,
-                    'VOLUME': random.randint(50000, 2000000),
-                    'TURNOVER_LACS': round(close_price * random.randint(50000, 2000000) / 100000, 2),
-                    'NO_OF_TRADES': random.randint(500, 10000),
-                    'DELIV_QTY': random.randint(25000, 1000000),
-                    'DELIV_PER': round(random.uniform(30, 80), 2),
-                    
-                    # Technical Indicators
-                    'ROLLING_MEDIAN': round(indicators['ROLLING_MEDIAN'][i], 2) if i < len(indicators['ROLLING_MEDIAN']) else close_price,
-                    'ROLLING_MODE': round(indicators['ROLLING_MODE'][i], 2) if i < len(indicators['ROLLING_MODE']) else close_price,
-                    'PP': round(indicators['PP'][i], 2) if i < len(indicators['PP']) else close_price,
-                    'S1': round(indicators['S1'][i], 2) if i < len(indicators['S1']) else close_price * 0.98,
-                    'S2': round(indicators['S2'][i], 2) if i < len(indicators['S2']) else close_price * 0.96,
-                    'S3': round(indicators['S3'][i], 2) if i < len(indicators['S3']) else close_price * 0.94,
-                    'S4': round(indicators['S4'][i], 2) if i < len(indicators['S4']) else close_price * 0.92,
-                    'R1': round(indicators['R1'][i], 2) if i < len(indicators['R1']) else close_price * 1.02,
-                    'R2': round(indicators['R2'][i], 2) if i < len(indicators['R2']) else close_price * 1.04,
-                    'R3': round(indicators['R3'][i], 2) if i < len(indicators['R3']) else close_price * 1.06,
-                    'R4': round(indicators['R4'][i], 2) if i < len(indicators['R4']) else close_price * 1.08,
-                    'FE_23_6': round(indicators['FE_23_6'][i], 2) if i < len(indicators['FE_23_6']) else close_price * 1.236,
-                    'FE_38_2': round(indicators['FE_38_2'][i], 2) if i < len(indicators['FE_38_2']) else close_price * 1.382,
-                    'FE_50': round(indicators['FE_50'][i], 2) if i < len(indicators['FE_50']) else close_price * 1.5,
-                    'FE_61_8': round(indicators['FE_61_8'][i], 2) if i < len(indicators['FE_61_8']) else close_price * 1.618,
-                    'VWAP_W': round(indicators['VWAP_W'][i], 2) if i < len(indicators['VWAP_W']) else close_price,
-                    'VWAP_M': round(indicators['VWAP_M'][i], 2) if i < len(indicators['VWAP_M']) else close_price,
-                    'VWAP_Q': round(indicators['VWAP_Q'][i], 2) if i < len(indicators['VWAP_Q']) else close_price,
-                    'VWAP_Y': round(indicators['VWAP_Y'][i], 2) if i < len(indicators['VWAP_Y']) else close_price,
-                    'EMA_63': round(indicators['EMA_63'][i], 2) if i < len(indicators['EMA_63']) else close_price,
-                    'EMA_144': round(indicators['EMA_144'][i], 2) if i < len(indicators['EMA_144']) else close_price,
-                    'EMA_234': round(indicators['EMA_234'][i], 2) if i < len(indicators['EMA_234']) else close_price,
-                    'BC': round(indicators['BC'][i], 2) if i < len(indicators['BC']) else close_price * 0.95,
-                    'TC': round(indicators['TC'][i], 2) if i < len(indicators['TC']) else close_price * 1.05,
-                    
-                    # EMA Crossover Signals
-                    'BullCross_63_144': indicators['BullCross_63_144'][i] if i < len(indicators['BullCross_63_144']) else 0,
-                    'BearCross_63_144': indicators['BearCross_63_144'][i] if i < len(indicators['BearCross_63_144']) else 0,
-                    'BullCross_144_234': indicators['BullCross_144_234'][i] if i < len(indicators['BullCross_144_234']) else 0,
-                    'BearCross_144_234': indicators['BearCross_144_234'][i] if i < len(indicators['BearCross_144_234']) else 0,
-                    'BullCross_63_234': indicators['BullCross_63_234'][i] if i < len(indicators['BullCross_63_234']) else 0,
-                    'BearCross_63_234': indicators['BearCross_63_234'][i] if i < len(indicators['BearCross_63_234']) else 0,
-                }
-                records.append(record)
-        
-        print(f"[OK] Lazy loaded {len(records)} records for {symbol} ({start_date} to {end_date})")
-        
-        return {
-            "data": records,
-            "count": len(records),
-            "range": {
-                "start": start_date,
-                "end": end_date,
-                "actual_start": records[0]['TIMESTAMP'] if records else None,
-                "actual_end": records[-1]['TIMESTAMP'] if records else None
-            }
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"Error in lazy loading: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to load range data: {str(e)}")
 
 @app.get("/stock_data/{symbol}/latest")
 async def get_latest_stock_data(symbol: str, days: int = 100):
@@ -515,16 +368,16 @@ async def get_latest_stock_data(symbol: str, days: int = 100):
         # Sort by timestamp ascending for chart display
         rows.sort(key=lambda x: x['timestamp'])
         
-        # Use the same processing as range endpoint
+        # Use the same processing as main endpoint
         close_prices = [float(row['close_price']) for row in rows if row['close_price']]
         indicators = calculate_technical_indicators(pd.DataFrame(rows), close_prices)
         
-        # Process records (same logic as range endpoint)
+        # Process records (same logic as main endpoint)
         records = []
         for i, row in enumerate(rows):
             close_price = float(row['close_price']) if row['close_price'] else None
             if close_price:
-                # Generate OHLC (same logic as above)
+                # Generate OHLC (same logic as main endpoint)
                 random.seed(hash(f"{symbol}-{row['timestamp']}"))
                 variation = 0.04
                 
@@ -550,13 +403,12 @@ async def get_latest_stock_data(symbol: str, days: int = 100):
                     'OPEN_PRICE': round(open_price, 2),
                     'HIGH_PRICE': round(high_price, 2), 
                     'LOW_PRICE': round(low_price, 2),
-                    # Add all technical indicators (same as range endpoint)
+                    # Add all technical indicators (simplified for latest endpoint)
                     'ROLLING_MEDIAN': round(indicators['ROLLING_MEDIAN'][i], 2) if i < len(indicators['ROLLING_MEDIAN']) else close_price,
                     'PP': round(indicators['PP'][i], 2) if i < len(indicators['PP']) else close_price,
                     'EMA_63': round(indicators['EMA_63'][i], 2) if i < len(indicators['EMA_63']) else close_price,
                     'EMA_144': round(indicators['EMA_144'][i], 2) if i < len(indicators['EMA_144']) else close_price,
                     'EMA_234': round(indicators['EMA_234'][i], 2) if i < len(indicators['EMA_234']) else close_price,
-                    # Include all other indicators as needed
                 }
                 records.append(record)
         
@@ -569,20 +421,6 @@ async def get_latest_stock_data(symbol: str, days: int = 100):
         print(f"Error loading latest data: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to load latest data: {str(e)}")
 
-def calculate_zscore(df, column, window):
-    """Calculate Z-score for a given column"""
-    if column not in df.columns:
-        return pd.Series(np.nan, index=df.index)
-
-    numeric_col = pd.to_numeric(df[column], errors='coerce')
-    rolling_data = numeric_col.dropna()
-
-    if len(rolling_data) < window:
-        return pd.Series(np.nan, index=df.index)
-
-    rolling_mean = rolling_data.rolling(window=window, min_periods=1).mean().reindex(df.index)
-    rolling_std = rolling_data.rolling(window=window, min_periods=1).std().reindex(df.index)
-
-    zscore = (numeric_col - rolling_mean) / rolling_std
-    zscore = zscore.replace([np.inf, -np.inf], np.nan)
-    return zscore
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8006)
