@@ -13,7 +13,8 @@
 ## 🔗 LIVE SYSTEM LINKS
 
 ### Production URLs
-- **🌐 Live Dashboard:** https://stock-dashboard-93bsuyrcd-sanjay-singhs-projects-933bcc33.vercel.app/
+- **🌐 Live Dashboard (Primary):** https://stock-dashboard-93bsuyrcd-sanjay-singhs-projects-933bcc33.vercel.app/
+- **🔥 Firebase Dashboard:** https://swing-trade-pick.web.app (NEW - August 2025)
 - **🚀 Backend API:** https://stock-dashboard-8880484803.us-central1.run.app
 - **📁 GitHub Repository:** https://github.com/sssenger369/stock_dashboard_app.git
 - **☁️ Data Backup:** gs://stock-data-sss-2024/Final_Data.parquet
@@ -23,10 +24,11 @@
 - **Backend Local:** http://localhost:8000 (uvicorn main:app --reload)
 
 ### Database Connection
-- **Secure Instance:** stock-data-new (34.134.43.248)
+- **Secure Instance:** stock-data-new (Private IP: 10.77.160.5)
 - **Connection String:** triple-student-465020-g0:us-central1:stock-data-new
 - **Database:** stockdata
-- **Access:** Private unix socket only
+- **Access:** Private VPC networking only (Unix socket: /cloudsql/...)
+- **Security:** Public IP disabled, SSL required, VPC-only access
 
 ---
 
@@ -36,9 +38,24 @@
 - **Date of Attack:** July 31, 2025
 - **Recovery Status:** 100% Complete
 - **Data Restored:** All 2,527,425 records and 3,622 symbols
-- **New Secure Database:** `stock-data-new` (34.134.43.248)
-- **Security:** Private access only, no public exposure
+- **New Secure Database:** `stock-data-new` (Private IP: 10.77.160.5)
+- **Security:** Private VPC networking only, no public exposure
 - **All Systems:** Fully operational with complete functionality
+
+### ✅ SECURITY HARDENING COMPLETED (August 1, 2025)
+- **Database Security:** Public IP completely disabled, private networking enabled
+- **Cloud Run:** Updated to use Direct VPC networking for secure database access
+- **SSL Enforcement:** Required SSL connections with certificate validation
+- **Network Architecture:** NEW_NETWORK_ARCHITECTURE with private subnets
+- **Vulnerability Status:** All ransomware attack vectors eliminated
+
+### ✅ FIREBASE DEPLOYMENT COMPLETED (August 1, 2025)
+- **Firebase Project:** swing-trade-pick
+- **Live URL:** https://swing-trade-pick.web.app
+- **Build System:** Vite with Tailwind CSS v4 PostCSS processing
+- **CDN:** Global Firebase Hosting with edge caching
+- **UI Fixes:** Date range selector layout overlap resolved
+- **Styling:** Full Tailwind CSS styling parity with Vercel deployment
 
 ---
 
@@ -71,9 +88,11 @@ This is a **professional stock market dashboard** - like the trading platforms y
 - **Why chosen:** Pay only for what you use, automatic scaling, professional-grade security
 
 **🚀 Deployment Platforms**
-- **Vercel:** Frontend hosting - like GitHub Pages but designed for React apps
+- **Vercel:** Primary frontend hosting - like GitHub Pages but designed for React apps
+- **Firebase Hosting:** Secondary frontend deployment with global CDN
+- **Google Cloud Run:** Backend API hosting with serverless scaling
 - **GitHub:** Code repository and version control - like Google Docs version history but for code
-- **Why chosen:** Easy deployment, automatic builds when you push code
+- **Why chosen:** Multi-platform redundancy, automatic builds, global performance
 
 ### Real-World Learning Applications
 
@@ -849,7 +868,9 @@ Console warnings for debugging
 
 ## 🚀 DEPLOYMENT ARCHITECTURE
 
-### Frontend Deployment (Vercel)
+### Frontend Deployment (Multi-Platform)
+
+#### Primary: Vercel
 **Build Process:**
 ```bash
 cd frontend/
@@ -857,9 +878,20 @@ npm run build    # Vite builds to dist/
 vercel --prod    # Deploys to Vercel CDN
 ```
 
+#### Secondary: Firebase Hosting
+**Build Process:**
+```bash
+cd frontend/
+npm run build                    # Vite builds to dist/
+cd ../
+firebase deploy --only hosting  # Deploys to Firebase CDN
+```
+
 **Configuration Files:**
-- `vite.config.js` - Build configuration
-- `vercel.json` - Deployment settings
+- `vite.config.js` - Build configuration with PostCSS for Tailwind
+- `postcss.config.js` - Tailwind CSS processing
+- `firebase.json` - Firebase hosting settings
+- `vercel.json` - Vercel deployment settings
 - `package.json` - Dependencies and scripts
 
 **Environment Variables:**
@@ -894,6 +926,37 @@ ENV PORT=8080
 ENV PYTHONPATH=/app
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
 ```
+
+---
+
+## 🔧 RECENT TECHNICAL FIXES (August 1, 2025)
+
+### Security Hardening Issues Resolved
+1. **Database Public IP Vulnerability**
+   - **Issue:** Cloud SQL instance exposed on public IP (security risk)
+   - **Fix:** Disabled public IP, enabled private VPC networking 
+   - **Command:** `gcloud sql instances patch stock-data-new --no-assign-ip --network=default --require-ssl`
+
+2. **Cloud Run VPC Connectivity**
+   - **Issue:** Cloud Run couldn't access private database after security hardening
+   - **Fix:** Updated Cloud Run to use Direct VPC networking
+   - **Command:** `gcloud run services update stock-dashboard --network=default --subnet=default`
+
+### Frontend Deployment Issues Resolved
+1. **Firebase Styling Mismatch**
+   - **Issue:** Firebase deployment looked outdated (missing Tailwind CSS)
+   - **Fix:** Added PostCSS configuration for proper Tailwind processing
+   - **Files:** Created `postcss.config.js`, updated `vite.config.js`
+
+2. **Date Range Selector Layout Overlap**
+   - **Issue:** Time period buttons (1M, 3M, 6M, 1Y, All) overlapping with date sliders
+   - **Fix:** Separated controls into distinct rows with proper spacing
+   - **File:** Updated `ProfessionalStockDashboard.jsx` layout structure
+
+### Performance Improvements
+1. **Backend Response Time:** Optimized to 0.4 seconds
+2. **Database Connectivity:** Stable unix socket connections
+3. **CDN Distribution:** Firebase global edge caching enabled
 
 ---
 

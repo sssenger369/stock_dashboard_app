@@ -86,66 +86,67 @@ const MultiFieldChart = ({
     console.log('All keys in first item:', Object.keys(data[0]));
   }
   
-  // Auto-detect available MA_45 fields in the data
-  const detectedFields = useMemo(() => {
+  // Auto-detect available volume-related fields in the data
+  const detectedVolumeFields = useMemo(() => {
     if (!data || data.length === 0) return [];
     
     const allFields = Object.keys(data[0]);
-    const ma45Fields = allFields.filter(field => field.includes('MA_45'));
-    
-    console.log('🔍 All fields in data:', allFields);
-    console.log('🔍 Detected MA_45 fields:', ma45Fields);
-    
-    return ma45Fields;
+    console.log('ALL fields in data:', allFields);
+    return allFields.filter(key => 
+      key.includes('MA_45') || key.includes('VOLUME') || key.includes('TURNOVER') || key.includes('DELIV') || key.includes('TRADES')
+    );
   }, [data]);
 
-  // Define the specific fields to chart - with fallback to detected fields
+  // Define the specific fields to chart - using actual volume data from backend
   const chartFields = useMemo(() => {
-    const defaultFields = [
+    const volumeFields = [
       {
-        key: 'VOLUME_MA_45',
-        title: 'Volume MA 45',
+        key: 'VOLUME',
+        title: 'Trading Volume',
         color: '#3b82f6',
-        unit: '',
-        description: '45-day Moving Average of Volume'
+        unit: 'Shares',
+        description: 'Number of shares traded'
       },
       {
-        key: 'TURNOVER_LACS_MA_45',
-        title: 'Turnover MA 45',
+        key: 'TURNOVER_LACS',
+        title: 'Turnover Value',
         color: '#22c55e',
         unit: '₹ Lacs',
-        description: '45-day Moving Average of Turnover (in Lacs)'
+        description: 'Total value of shares traded (in Lacs)'
       },
       {
-        key: 'NO_OF_TRADES_MA_45',
-        title: 'Trades MA 45',
+        key: 'NO_OF_TRADES',
+        title: 'Number of Trades',
         color: '#f59e0b',
-        unit: '',
-        description: '45-day Moving Average of Number of Trades'
+        unit: 'Trades',
+        description: 'Total number of trades executed'
       },
       {
-        key: 'DELIV_QTY_MA_45',
-        title: 'Delivery Qty MA 45',
+        key: 'DELIV_QTY',
+        title: 'Delivery Quantity',
         color: '#ef4444',
-        unit: '',
-        description: '45-day Moving Average of Delivery Quantity'
+        unit: 'Shares',
+        description: 'Number of shares delivered'
       },
       {
-        key: 'DELIV_PER_MA_45',
-        title: 'Delivery % MA 45',
+        key: 'DELIV_PER',
+        title: 'Delivery Percentage',
         color: '#8b5cf6',
         unit: '%',
-        description: '45-day Moving Average of Delivery Percentage'
+        description: 'Percentage of shares delivered vs traded'
       }
     ];
 
-    // If none of the default fields exist, create fields from detected MA_45 fields
+    // Check if volume fields exist in the data
     if (data && data.length > 0) {
-      const hasDefaultFields = defaultFields.some(field => data[0].hasOwnProperty(field.key));
+      const hasVolumeFields = volumeFields.some(field => data[0].hasOwnProperty(field.key));
       
-      if (!hasDefaultFields && detectedFields.length > 0) {
-        console.log('🔄 Using auto-detected MA_45 fields instead of defaults');
-        return detectedFields.map((field, index) => ({
+      if (hasVolumeFields) {
+        console.log('✅ Using actual volume fields from backend data');
+        return volumeFields.filter(field => data[0].hasOwnProperty(field.key));
+      } else if (detectedVolumeFields.length > 0) {
+        console.log('🔄 Using auto-detected volume fields instead of defaults');
+        return detectedVolumeFields.map((field, index) => ({
           key: field,
           title: field.replace(/_/g, ' ').replace('MA 45', 'MA 45'),
           color: ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'][index % 7],
@@ -155,8 +156,10 @@ const MultiFieldChart = ({
       }
     }
 
-    return defaultFields;
-  }, [data, detectedFields]);
+    // Fallback to empty array if no fields found
+    console.log('⚠️ No volume fields found, returning empty array');
+    return [];
+  }, [data, detectedVolumeFields]);
 
   // Debug: Check ALL available fields in the first data item
   const availableFields = useMemo(() => {
@@ -497,7 +500,7 @@ const MultiFieldChart = ({
               Total data points: {data.length}
             </p>
             <p className="text-gray-400 text-xs">
-              Detected MA_45 fields: {detectedFields.length > 0 ? detectedFields.join(', ') : 'None found'}
+              Detected volume fields: {detectedVolumeFields.length > 0 ? detectedVolumeFields.join(', ') : 'None found'}
             </p>
             <p className="text-gray-400 text-xs">
               Using {chartFields.length} chart fields
