@@ -46,6 +46,12 @@ const CandlestickChart = ({
 
   // Transform data for ApexCharts candlestick format and technical indicators
   const chartData = useMemo(() => {
+    console.log('🔍 CandlestickChart - Processing data:', { 
+      totalRecords: data?.length || 0,
+      selectedIndicators: selectedIndicators.length,
+      selectedSignals: selectedCrossoverSignals.length 
+    });
+    
     if (!data || data.length === 0) return { candlestickData: [], indicatorSeries: [], crossoverMarkers: [] };
     
     // Filter out invalid data points (convert strings to numbers for validation)
@@ -60,6 +66,8 @@ const CandlestickChart = ({
       !isNaN(parseFloat(item.CLOSE_PRICE))
     );
 
+    console.log('🧹 CandlestickChart - Clean data:', cleanData.length, 'records');
+    
     if (cleanData.length === 0) return { candlestickData: [], indicatorSeries: [], crossoverMarkers: [] };
 
     // Sort by timestamp
@@ -84,21 +92,44 @@ const CandlestickChart = ({
       };
     });
 
-    // Prepare technical indicator data
-    const indicatorSeries = selectedIndicators
-      .filter(indicator => cleanData.some(d => d[indicator] !== null && d[indicator] !== undefined))
-      .map(indicator => ({
+    // Prepare technical indicator data - fixed to show all selected indicators
+    console.log('📊 CandlestickChart - Processing indicators:', selectedIndicators);
+    
+    const indicatorSeries = selectedIndicators.map(indicator => {
+      const indicatorData = cleanData.map(item => {
+        const date = parseISO(item.TIMESTAMP);
+        const timestamp = isValid(date) ? date.getTime() : new Date(item.TIMESTAMP).getTime();
+        
+        // Convert to float and handle various null/undefined values
+        let value = item[indicator];
+        if (value === null || value === undefined || value === '' || isNaN(value)) {
+          value = null;
+        } else {
+          value = parseFloat(value);
+        }
+        
+        return {
+          x: timestamp,
+          y: value
+        };
+      }).filter(point => point.y !== null && !isNaN(point.y)); // Only filter out truly invalid values
+      
+      // Only include indicator if it has at least some valid data points
+      const result = indicatorData.length > 0 ? {
         name: indicator,
         type: 'line',
-        data: cleanData.map(item => {
-          const date = parseISO(item.TIMESTAMP);
-          const timestamp = isValid(date) ? date.getTime() : new Date(item.TIMESTAMP).getTime();
-          return {
-            x: timestamp,
-            y: parseFloat(item[indicator]) || null
-          };
-        }).filter(point => point.y !== null)
-      }));
+        data: indicatorData
+      } : null;
+      
+      console.log(`📈 Indicator ${indicator}: ${indicatorData.length} data points`);
+      return result;
+    }).filter(Boolean); // Remove null entries
+    
+    console.log('✅ CandlestickChart - Final result:', {
+      candlestickData: candlestickData.length,
+      indicatorSeries: indicatorSeries.length,
+      crossoverMarkers: 'processing...'
+    });
 
     // Prepare crossover markers data (only where value = 1)
     const crossoverMarkers = selectedCrossoverSignals
@@ -182,21 +213,10 @@ const CandlestickChart = ({
       }
     },
     title: {
-      text: `${symbol} Candlestick Chart`,
-      align: 'left',
-      style: {
-        fontSize: '18px',
-        fontWeight: 'bold',
-        color: '#ffffff'
-      }
+      text: undefined // Remove duplicate title - using React component header instead
     },
     subtitle: {
-      text: subtitle,
-      align: 'left',
-      style: {
-        fontSize: '14px',
-        color: '#94a3b8'
-      }
+      text: undefined // Remove duplicate subtitle - using React component header instead  
     },
     xaxis: {
       type: 'datetime',

@@ -46,12 +46,31 @@ function ProfessionalStockDashboard({
   
   // Search states
   const [symbolSearch, setSymbolSearch] = useState('');
+  const [debouncedSymbolSearch, setDebouncedSymbolSearch] = useState('');
   const [indicatorSearch, setIndicatorSearch] = useState('');
   const [signalSearch, setSignalSearch] = useState('');
   const [isSymbolDropdownOpen, setIsSymbolDropdownOpen] = useState(false);
   const [isSignalDropdownOpen, setIsSignalDropdownOpen] = useState(false);
   const symbolDropdownRef = useRef(null);
   const signalDropdownRef = useRef(null);
+  const symbolSearchTimeoutRef = useRef(null);
+
+  // Debounce symbol search for better performance
+  useEffect(() => {
+    if (symbolSearchTimeoutRef.current) {
+      clearTimeout(symbolSearchTimeoutRef.current);
+    }
+    
+    symbolSearchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSymbolSearch(symbolSearch);
+    }, 150); // 150ms debounce
+    
+    return () => {
+      if (symbolSearchTimeoutRef.current) {
+        clearTimeout(symbolSearchTimeoutRef.current);
+      }
+    };
+  }, [symbolSearch]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -61,6 +80,7 @@ function ProfessionalStockDashboard({
       }
       if (symbolDropdownRef.current && !symbolDropdownRef.current.contains(event.target)) {
         setIsSymbolDropdownOpen(false);
+        setSymbolSearch(''); // Clear search when closing
       }
       if (signalDropdownRef.current && !signalDropdownRef.current.contains(event.target)) {
         setIsSignalDropdownOpen(false);
@@ -80,9 +100,19 @@ function ProfessionalStockDashboard({
 
   // Available technical indicators (updated to match backend field names)
   const availableIndicators = [
-    { value: 'ROLLING_MEDIAN', label: 'Rolling Median', color: '#10b981' },
-    { value: 'ROLLING_MODE', label: 'Rolling Mode', color: '#f59e0b' },
-    { value: 'PP', label: 'Pivot Point', color: '#8b5cf6' },
+    // Basic Price Data
+    { value: 'CLOSE_PRICE', label: 'Close Price', color: '#3b82f6' },
+    { value: 'OPEN_PRICE', label: 'Open Price', color: '#10b981' },
+    { value: 'HIGH_PRICE', label: 'High Price', color: '#22c55e' },
+    { value: 'LOW_PRICE', label: 'Low Price', color: '#ef4444' },
+    { value: 'AVG_PRICE', label: 'Average Price', color: '#8b5cf6' },
+    
+    // Rolling Indicators
+    { value: 'ROLLING_MEDIAN', label: 'Rolling Median', color: '#f59e0b' },
+    { value: 'ROLLING_MODE', label: 'Rolling Mode', color: '#f97316' },
+    
+    // Pivot Points & Support/Resistance
+    { value: 'PP', label: 'Pivot Point', color: '#6366f1' },
     { value: 'S1', label: 'Support 1', color: '#ef4444' },
     { value: 'S2', label: 'Support 2', color: '#dc2626' },
     { value: 'S3', label: 'Support 3', color: '#b91c1c' },
@@ -91,27 +121,54 @@ function ProfessionalStockDashboard({
     { value: 'R2', label: 'Resistance 2', color: '#16a34a' },
     { value: 'R3', label: 'Resistance 3', color: '#15803d' },
     { value: 'R4', label: 'Resistance 4', color: '#166534' },
-    { value: 'BC', label: 'Bottom Channel', color: '#0891b2' },
-    { value: 'TC', label: 'Top Channel', color: '#0e7490' },
-    { value: 'FE_23_6', label: 'Fibonacci 23.6%', color: '#7c3aed' },
-    { value: 'FE_38_2', label: 'Fibonacci 38.2%', color: '#6d28d9' },
-    { value: 'FE_50', label: 'Fibonacci 50.0%', color: '#5b21b6' },
-    { value: 'FE_61_8', label: 'Fibonacci 61.8%', color: '#4c1d95' },
-    { value: 'VWAP_W', label: 'VWAP Weekly', color: '#059669' },
-    { value: 'VWAP_M', label: 'VWAP Monthly', color: '#0d9488' },
-    { value: 'VWAP_Q', label: 'VWAP Quarterly', color: '#0f766e' },
-    { value: 'VWAP_Y', label: 'VWAP Yearly', color: '#115e59' },
-    { value: 'EMA_63', label: 'EMA 63', color: '#f97316' },
-    { value: 'EMA_144', label: 'EMA 144', color: '#ea580c' },
-    { value: 'EMA_234', label: 'EMA 234', color: '#c2410c' }
+    { value: 'BC', label: 'Bottom Channel', color: '#be123c' },
+    { value: 'TC', label: 'Top Channel', color: '#059669' },
+    
+    // VWAP Indicators
+    { value: 'VWAP_W', label: 'VWAP Weekly', color: '#0ea5e9' },
+    { value: 'VWAP_M', label: 'VWAP Monthly', color: '#0284c7' },
+    { value: 'VWAP_Q', label: 'VWAP Quarterly', color: '#0369a1' },
+    { value: 'VWAP_Y', label: 'VWAP Yearly', color: '#075985' },
+    
+    // VWAP Bands Weekly
+    { value: 'VWAP_UPPER_1_W', label: 'VWAP Upper 1σ (W)', color: '#84cc16' },
+    { value: 'VWAP_LOWER_1_W', label: 'VWAP Lower 1σ (W)', color: '#eab308' },
+    { value: 'VWAP_UPPER_2_W', label: 'VWAP Upper 2σ (W)', color: '#65a30d' },
+    { value: 'VWAP_LOWER_2_W', label: 'VWAP Lower 2σ (W)', color: '#ca8a04' },
+    
+    // EMAs
+    { value: 'EMA_63', label: 'EMA 63', color: '#8b5cf6' },
+    { value: 'EMA_144', label: 'EMA 144', color: '#a855f7' },
+    { value: 'EMA_234', label: 'EMA 234', color: '#9333ea' },
+    
+    // Fibonacci Extensions
+    { value: 'FIB_EXT_0.236', label: 'Fibonacci 23.6%', color: '#f472b6' },
+    { value: 'FIB_EXT_0.786', label: 'Fibonacci 78.6%', color: '#ec4899' },
+    
+    // Linear Regression
+    { value: 'LINREG_CURVE_63', label: 'LinReg Curve 63', color: '#14b8a6' },
+    
+    // Previous Levels
+    { value: 'PREV_HIGH', label: 'Previous High', color: '#fbbf24' },
+    { value: 'PREV_LOW', label: 'Previous Low', color: '#fb923c' },
+    { value: 'PREV_CLOSE_X', label: 'Previous Close', color: '#f87171' }
   ];
 
-  // Filter functions
+  // Optimized filter functions with limits for performance
   const filteredSymbols = useMemo(() => {
-    return symbols.filter(symbol => 
-      getDisplaySymbol(symbol).toLowerCase().includes(symbolSearch.toLowerCase())
+    if (!debouncedSymbolSearch.trim()) {
+      // Show first 50 symbols when no search
+      return symbols.slice(0, 50);
+    }
+    
+    const searchTerm = debouncedSymbolSearch.toLowerCase();
+    const filtered = symbols.filter(symbol => 
+      getDisplaySymbol(symbol).toLowerCase().includes(searchTerm)
     );
-  }, [symbols, symbolSearch, getDisplaySymbol]);
+    
+    // Limit results to 100 for performance
+    return filtered.slice(0, 100);
+  }, [symbols, debouncedSymbolSearch, getDisplaySymbol]);
 
   const filteredIndicators = useMemo(() => {
     return availableIndicators.filter(indicator => 
@@ -213,14 +270,14 @@ function ProfessionalStockDashboard({
 
   // Prepare chart data from your backend format - optimized for performance
   const chartFormattedData = React.useMemo(() => {
+    console.log('🔍 Dashboard chartFormattedData processing - Raw stockData:', stockData?.length || 0, 'records');
+    
     if (!stockData || stockData.length === 0) {
       return [];
     }
     
-    // For large datasets, sample data to improve performance
-    const sampleData = stockData.length > 5000 
-      ? stockData.filter((_, index) => index % Math.ceil(stockData.length / 2000) === 0)
-      : stockData;
+    // Use all data - no sampling to show all data points
+    const sampleData = stockData;
     
     const formatted = sampleData
       .filter(d => d.CLOSE_PRICE && !isNaN(parseFloat(d.CLOSE_PRICE)))
@@ -233,13 +290,17 @@ function ProfessionalStockDashboard({
         
         // Only add selected indicators to reduce memory usage
         selectedIndicators.forEach(indicatorValue => {
-          if (d[indicatorValue]) {
+          if (d[indicatorValue] !== null && d[indicatorValue] !== undefined) {
             baseData[indicatorValue] = parseFloat(d[indicatorValue]);
           }
         });
         
         return baseData;
       });
+    
+    console.log('🔍 Dashboard chartFormattedData final result:', formatted.length, 'records');
+    console.log('🔍 First 3 formatted records:', formatted.slice(0, 3));
+    console.log('🔍 Last 3 formatted records:', formatted.slice(-3));
     
     return formatted;
   }, [stockData, selectedIndicators]); // Include selectedIndicators for efficiency
@@ -395,7 +456,7 @@ function ProfessionalStockDashboard({
                     <button
                       type="button"
                       onClick={() => setIsSymbolDropdownOpen(!isSymbolDropdownOpen)}
-                      className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-w-[120px] h-10 flex items-center justify-between"
+                      className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-w-[240px] h-10 flex items-center justify-between"
                     >
                       <span className="truncate">
                         {selectedSymbol ? getDisplaySymbol(selectedSymbol) : 'Select Symbol'}
@@ -410,11 +471,23 @@ function ProfessionalStockDashboard({
                         <div className="p-2 border-b border-slate-600">
                           <input
                             type="text"
-                            placeholder="Search symbols..."
+                            placeholder="Type to search 3,621 symbols..."
                             value={symbolSearch}
                             onChange={(e) => setSymbolSearch(e.target.value)}
                             className="w-full bg-slate-600 border border-slate-500 rounded px-2 py-1 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            autoFocus
                           />
+                          {symbolSearch.trim() && symbolSearch !== debouncedSymbolSearch && (
+                            <div className="text-xs text-blue-400 mt-1 flex items-center gap-1">
+                              <div className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+                              Searching...
+                            </div>
+                          )}
+                          {symbolSearch.trim() && symbolSearch === debouncedSymbolSearch && filteredSymbols.length === 100 && (
+                            <div className="text-xs text-slate-400 mt-1">
+                              Showing first 100 matches. Refine search for more.
+                            </div>
+                          )}
                         </div>
                         <div className="max-h-48 overflow-y-auto">
                           {filteredSymbols.map(symbol => (
@@ -424,6 +497,7 @@ function ProfessionalStockDashboard({
                                 onSymbolChange && onSymbolChange(symbol);
                                 setIsSymbolDropdownOpen(false);
                                 setSymbolSearch('');
+                                setDebouncedSymbolSearch('');
                               }}
                               className="w-full text-left px-3 py-2 hover:bg-slate-600/50 text-white text-sm border-none bg-transparent"
                             >
@@ -446,7 +520,7 @@ function ProfessionalStockDashboard({
                     <button
                       type="button"
                       onClick={() => setIsIndicatorDropdownOpen(!isIndicatorDropdownOpen)}
-                      className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-w-[160px] h-10 flex items-center justify-between"
+                      className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all min-w-[240px] h-10 flex items-center justify-between"
                     >
                       <span className="truncate">
                         {selectedIndicators.length === 0 
@@ -483,6 +557,7 @@ function ProfessionalStockDashboard({
                                   } else {
                                     newSelected = selectedIndicators.filter(id => id !== indicator.value);
                                   }
+                                  console.log('📊 Indicator selection changed:', newSelected);
                                   onIndicatorChange && onIndicatorChange(newSelected);
                                 }}
                                 className="mr-2 w-4 h-4 text-blue-500 bg-slate-600 border-slate-500 rounded focus:ring-blue-500 focus:ring-2"
@@ -507,7 +582,7 @@ function ProfessionalStockDashboard({
                     <button
                       type="button"
                       onClick={() => setIsSignalDropdownOpen(!isSignalDropdownOpen)}
-                      className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all min-w-[160px] h-10 flex items-center justify-between"
+                      className="bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all min-w-[240px] h-10 flex items-center justify-between"
                     >
                       <span className="truncate">
                         {selectedCrossoverSignals.length > 0 

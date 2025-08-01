@@ -218,8 +218,8 @@ async def get_stock_data(
     end_date: str = None,
     frequency: str = "Daily",
     zscore_window: int = 30,
-    max_records: int = 50000,  # ALLOW ALL RECORDS
-    enable_sampling: bool = False,  # DISABLE SAMPLING BY DEFAULT
+    max_records: int = 2000,  # Allow more records
+    enable_sampling: bool = True,  # Allow disabling sampling
     honest_mode: bool = False  # NEW: Return only real data without artificial indicators
 ):
     """

@@ -4,7 +4,8 @@
       "Bash(npm run dev:*)",
       "Bash(npm install:*)",
       "mcp__ide__executeCode",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(gcloud run deploy:*)"
     ],
     "deny": []
   }

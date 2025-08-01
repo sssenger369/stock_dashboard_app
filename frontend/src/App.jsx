@@ -16,8 +16,8 @@ function App() {
   const [dataDateRange, setDataDateRange] = useState({ min: null, max: null });
   const [fullDatasetRange, setFullDatasetRange] = useState({ min: null, max: null }); // Fixed dataset boundaries
 
-  // FastAPI backend URL - REAL DATABASE with FULL data access (no sampling)
-  const API_BASE_URL = 'http://127.0.0.1:8008';
+  // FastAPI backend URL - Production cloud backend
+  const API_BASE_URL = 'https://stock-dashboard-8880484803.us-central1.run.app';
   
   // Debug logging
   console.log('🔗 API_BASE_URL:', API_BASE_URL);
@@ -42,21 +42,30 @@ function App() {
       }
       
       const symbolsData = await response.json();
-      console.log('Loaded symbols:', symbolsData);
+      console.log(`✅ Successfully loaded ${symbolsData.length} symbols from secure database`);
+      console.log('📊 First 10 symbols:', symbolsData.slice(0, 10));
+      console.log('📊 Last 10 symbols:', symbolsData.slice(-10));
+      
+      if (symbolsData.length < 3000) {
+        console.warn('⚠️ WARNING: Expected 3,622 symbols but got:', symbolsData.length);
+      }
       
       setSymbols(symbolsData);
       
       // Set first symbol as default if none selected
       if (symbolsData.length > 0 && !selectedSymbol) {
         setSelectedSymbol(symbolsData[0]);
+        console.log('🎯 Auto-selected first symbol:', symbolsData[0]);
       }
       
     } catch (error) {
-      console.error('Error loading symbols:', error);
+      console.error('❌ ERROR loading symbols from API:', error);
       setDataError(`Failed to load symbols: ${error.message}`);
       
-      // Fallback to some common Indian symbols if API fails
-      const fallbackSymbols = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'HINDUNILVR'];
+      // Fallback to limited symbols if API fails
+      const fallbackSymbols = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'HINDUNILVR', 'BAJFINANCE', 'BHARTIARTL', 'COALINDIA', 'MARUTI', 'WIPRO'];
+      console.warn('⚠️ USING FALLBACK SYMBOLS - API failed, showing only 10 symbols instead of 3,622');
+      console.warn('🔧 Check network/CORS issues if you see this message');
       setSymbols(fallbackSymbols);
       setSelectedSymbol(fallbackSymbols[0]);
     } finally {
@@ -65,23 +74,22 @@ function App() {
   };
 
   // Fetch stock data from FastAPI backend
-  const fetchStockData = useCallback(async (symbol, start, end, loadAll = false) => {
+  const fetchStockData = useCallback(async (symbol, start, end, loadAll = true) => {
     if (!symbol) return;
     
     setDataLoading(true);
     setDataError(null);
     
     try {
-      let apiUrl = `${API_BASE_URL}/stock_data/${symbol}?frequency=Daily&max_records=5000&enable_sampling=false`;
+      // ALWAYS fetch ALL data - no limits, no sampling
+      let apiUrl = `${API_BASE_URL}/stock_data/${symbol}`;
       
-      if (!loadAll) {
-        // Format dates for API (YYYY-MM-DD)
-        const startDateStr = start.toISOString().split('T')[0];
-        const endDateStr = end.toISOString().split('T')[0];
-        apiUrl += `&start_date=${startDateStr}&end_date=${endDateStr}`;
-        console.log(`📈 Fetching data for ${symbol} from ${startDateStr} to ${endDateStr} (max_records=5000, no sampling)`);
+      // Add date filters only if provided
+      if (start && end && !loadAll) {
+        apiUrl += `?start_date=${start}&end_date=${end}`;
+        console.log(`📈 Fetching data for ${symbol} from ${start} to ${end}`);
       } else {
-        console.log(`📈 Fetching ALL data for ${symbol} (max_records=5000, no sampling)`);
+        console.log(`📈 Fetching ALL DATA for ${symbol} - NO LIMITS, NO SAMPLING`);
       }
       
       console.log('🔗 Stock data API URL:', apiUrl);
@@ -99,7 +107,23 @@ function App() {
       }
       
       const data = await response.json();
-      console.log(`Received ${data.length} records for ${symbol}`);
+      console.log(`📊 SUCCESS: Received ${data.length} records for ${symbol}`);
+      
+      if (data.length === 0) {
+        console.warn('⚠️ WARNING: No data returned from backend');
+        throw new Error(`No data available for ${symbol}`);
+      }
+      
+      if (data.length < 100) {
+        console.warn(`⚠️ WARNING: Only ${data.length} records returned - expected hundreds/thousands`);
+      } else {
+        console.log(`✅ Good data volume: ${data.length} records`);
+      }
+      
+      console.log('🔍 Date range in data:', {
+        first: data[0]?.TIMESTAMP,
+        last: data[data.length - 1]?.TIMESTAMP
+      });
       
       // Debug: Log available fields in first record
       if (data.length > 0) {
@@ -156,6 +180,10 @@ function App() {
         
         return baseData;
       });
+      
+      console.log(`🔍 TRANSFORMED DATA DEBUG - Final ${transformedData.length} records`);
+      console.log('🔍 First 3 transformed records:', transformedData.slice(0, 3));
+      console.log('🔍 Last 3 transformed records:', transformedData.slice(-3));
       
       setStockData(transformedData);
       console.log(`✅ Successfully loaded ${transformedData.length} data points for ${symbol}`);

@@ -1,0 +1,18 @@
+-- Create table for stock data import
+CREATE TABLE IF NOT EXISTS stock_data (
+    TIMESTAMP DATETIME,
+    SYMBOL VARCHAR(50),
+    CLOSE_PRICE DECIMAL(15,4),
+    OPEN_PRICE DECIMAL(15,4), 
+    HIGH_PRICE DECIMAL(15,4),
+    LOW_PRICE DECIMAL(15,4),
+    VOLUME BIGINT,
+    TURNOVER_LACS DECIMAL(15,4),
+    NO_OF_TRADES INT,
+    DELIV_QTY BIGINT,
+    DELIV_PER DECIMAL(5,2),
+    
+    INDEX idx_symbol (SYMBOL),
+    INDEX idx_timestamp (TIMESTAMP),
+    INDEX idx_symbol_timestamp (SYMBOL, TIMESTAMP)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

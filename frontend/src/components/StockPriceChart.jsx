@@ -169,21 +169,32 @@ function StockPriceChart({
       };
     });
 
-    // Prepare technical indicator data
-    const indicatorSeries = selectedIndicators
-      .filter(indicator => cleanData.some(d => d[indicator] !== null && d[indicator] !== undefined))
-      .map(indicator => ({
+    // Prepare technical indicator data - fixed to show all selected indicators
+    const indicatorSeries = selectedIndicators.map(indicator => {
+      const indicatorData = cleanData.map(item => {
+        const date = parseISO(item.TIMESTAMP);
+        const timestamp = isValid(date) ? date.getTime() : new Date(item.TIMESTAMP).getTime();
+        
+        // Convert to float and handle various null/undefined values
+        let value = item[indicator];
+        if (value === null || value === undefined || value === '' || isNaN(value)) {
+          value = null;
+        } else {
+          value = parseFloat(value);
+        }
+        
+        return {
+          x: timestamp,
+          y: value
+        };
+      }).filter(point => point.y !== null && !isNaN(point.y)); // Only filter out truly invalid values
+      
+      // Only include indicator if it has at least some valid data points
+      return indicatorData.length > 0 ? {
         name: indicator.replace(/_/g, ' '),
-        data: cleanData.map(item => {
-          const date = parseISO(item.TIMESTAMP);
-          const timestamp = isValid(date) ? date.getTime() : new Date(item.TIMESTAMP).getTime();
-          
-          return {
-            x: timestamp,
-            y: parseFloat(item[indicator]) || null
-          };
-        }).filter(point => point.y !== null)
-      }));
+        data: indicatorData
+      } : null;
+    }).filter(Boolean); // Remove null entries
 
     // Prepare crossover markers data (only where value = 1)
     const crossoverMarkers = selectedCrossoverSignals
@@ -486,6 +497,12 @@ function StockPriceChart({
   };
 
   // Prepare series data
+  console.log('📊 StockPriceChart - Final series data:', {
+    priceData: chartData.priceData?.length || 0,
+    indicatorSeries: chartData.indicatorSeries?.length || 0,
+    crossoverMarkers: chartData.crossoverMarkers?.length || 0
+  });
+  
   const series = [
     {
       name: 'Price',

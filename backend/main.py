@@ -25,13 +25,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database configuration
+# Database configuration - Secure instance after ransomware recovery
 DB_CONFIG = {
-    'host': '34.46.207.67',
+    'unix_socket': '/cloudsql/triple-student-465020-g0:us-central1:stock-data-new',
     'database': 'stockdata',
     'user': 'stockuser', 
-    'password': 'StockPass123',
-    'port': 3306
+    'password': 'Vascodigama@113',
+    'connection_timeout': 60,
+    'autocommit': True
 }
 
 def get_db_connection():
@@ -309,27 +310,8 @@ async def get_stock_data(
                     'CLOSE_PRICE': None
                 })
         
-        # Gentle sampling only for very large datasets to maintain data continuity
-        if len(records) > 500:  # Only sample if we have more than 500 records
-            # Keep more data for better candlestick continuity
-            # Always keep the most recent 200 records (about 8 months of trading data)
-            recent_records = records[-200:]
-            older_records = records[:-200]
-            
-            # Much gentler sampling of older records - only reduce by half at most
-            if len(older_records) > 200:
-                sample_rate = max(2, len(older_records) // 200)  # Max sample rate of 2 (keep every 2nd record)
-                sampled_older = older_records[::sample_rate]
-            else:
-                sampled_older = older_records
-            
-            # Combine sampled older data with all recent data
-            records = sampled_older + recent_records
-            print(f"[SAMPLING] Gentle sampling: {len(sampled_older)} older + {len(recent_records)} recent = {len(records)} total records")
-        else:
-            print(f"[SAMPLING] No sampling needed: {len(records)} records (under 500 limit)")
-        
-        print(f"[OK] Generated comprehensive data with {len(records)} records and 20+ indicators for {symbol}!")
+        # NO SAMPLING - Return all records
+        print(f"[NO SAMPLING] Returning ALL {len(records)} records with full technical indicators for {symbol}!")
         return records
         
     except HTTPException:
@@ -342,12 +324,10 @@ async def get_stock_data(
 async def get_stock_data_range(
     symbol: str,
     start_date: str,
-    end_date: str,
-    limit: int = 200
+    end_date: str
 ):
     """
-    TradingView-style lazy loading endpoint
-    Returns stock data for a specific date range with limit
+    Returns ALL stock data for a specific date range - NO LIMITS
     """
     try:
         connection = get_db_connection()
@@ -356,19 +336,18 @@ async def get_stock_data_range(
         
         cursor = connection.cursor(dictionary=True)
         
-        # Optimized query with date range and limit
+        # Query with NO LIMITS - return all data
         query = """
         SELECT timestamp, symbol, close_price 
         FROM stock_data 
         WHERE symbol = %s 
         AND timestamp >= %s 
         AND timestamp <= %s
-        ORDER BY timestamp DESC
-        LIMIT %s
+        ORDER BY timestamp ASC
         """
         
-        print(f"[LAZY] Loading: {symbol} from {start_date} to {end_date} (limit: {limit})")
-        cursor.execute(query, [symbol, start_date, end_date, limit])
+        print(f"[NO LIMITS] Loading ALL records for: {symbol} from {start_date} to {end_date}")
+        cursor.execute(query, [symbol, start_date, end_date])
         rows = cursor.fetchall()
         
         cursor.close()
@@ -482,9 +461,9 @@ async def get_stock_data_range(
         raise HTTPException(status_code=500, detail=f"Failed to load range data: {str(e)}")
 
 @app.get("/stock_data/{symbol}/latest")
-async def get_latest_stock_data(symbol: str, days: int = 100):
+async def get_latest_stock_data(symbol: str):
     """
-    Get the most recent N days of data for initial chart load
+    Get ALL stock data for a symbol - NO LIMITS
     """
     try:
         connection = get_db_connection()
@@ -493,17 +472,16 @@ async def get_latest_stock_data(symbol: str, days: int = 100):
         
         cursor = connection.cursor(dictionary=True)
         
-        # Get latest N days
+        # Get ALL data - NO LIMITS
         query = """
         SELECT timestamp, symbol, close_price 
         FROM stock_data 
         WHERE symbol = %s 
-        ORDER BY timestamp DESC
-        LIMIT %s
+        ORDER BY timestamp ASC
         """
         
-        print(f"[LOADING] Latest {days} days for {symbol}")
-        cursor.execute(query, [symbol, days])
+        print(f"[NO LIMITS] Loading ALL records for {symbol}")
+        cursor.execute(query, [symbol])
         rows = cursor.fetchall()
         
         cursor.close()
