@@ -10,6 +10,26 @@
 
 ---
 
+## 🔗 LIVE SYSTEM LINKS
+
+### Production URLs
+- **🌐 Live Dashboard:** https://stock-dashboard-93bsuyrcd-sanjay-singhs-projects-933bcc33.vercel.app/
+- **🚀 Backend API:** https://stock-dashboard-8880484803.us-central1.run.app
+- **📁 GitHub Repository:** https://github.com/sssenger369/stock_dashboard_app.git
+- **☁️ Data Backup:** gs://stock-data-sss-2024/Final_Data.parquet
+
+### Development URLs
+- **Frontend Local:** http://localhost:5173 (npm run dev)
+- **Backend Local:** http://localhost:8000 (uvicorn main:app --reload)
+
+### Database Connection
+- **Secure Instance:** stock-data-new (34.134.43.248)
+- **Connection String:** triple-student-465020-g0:us-central1:stock-data-new
+- **Database:** stockdata
+- **Access:** Private unix socket only
+
+---
+
 ## 🚨 CRITICAL RECOVERY STATUS
 
 ### ✅ RANSOMWARE RECOVERY COMPLETED SUCCESSFULLY
