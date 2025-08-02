@@ -16,8 +16,8 @@ function App() {
   const [dataDateRange, setDataDateRange] = useState({ min: null, max: null });
   const [fullDatasetRange, setFullDatasetRange] = useState({ min: null, max: null }); // Fixed dataset boundaries
 
-  // FastAPI backend URL - Production cloud backend
-  const API_BASE_URL = 'https://stock-dashboard-8880484803.us-central1.run.app';
+  // FastAPI backend URL - BigQuery Powered Backend
+  const API_BASE_URL = 'https://stock-dashboard-q6o3cz2g6q-uc.a.run.app';
   
   // Debug logging
   console.log('🔗 API_BASE_URL:', API_BASE_URL);

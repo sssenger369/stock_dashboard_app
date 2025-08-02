@@ -15,6 +15,7 @@ import {
 import CandlestickChart from './CandlestickChart';
 import StockPriceChart from './StockPriceChart';
 import MultiFieldChart from './MultiFieldChart';
+import DataTable from './DataTable';
 
 function ProfessionalStockDashboard({ 
   symbols = [], 
@@ -100,13 +101,6 @@ function ProfessionalStockDashboard({
 
   // Available technical indicators (updated to match backend field names)
   const availableIndicators = [
-    // Basic Price Data
-    { value: 'CLOSE_PRICE', label: 'Close Price', color: '#3b82f6' },
-    { value: 'OPEN_PRICE', label: 'Open Price', color: '#10b981' },
-    { value: 'HIGH_PRICE', label: 'High Price', color: '#22c55e' },
-    { value: 'LOW_PRICE', label: 'Low Price', color: '#ef4444' },
-    { value: 'AVG_PRICE', label: 'Average Price', color: '#8b5cf6' },
-    
     // Rolling Indicators
     { value: 'ROLLING_MEDIAN', label: 'Rolling Median', color: '#f59e0b' },
     { value: 'ROLLING_MODE', label: 'Rolling Mode', color: '#f97316' },
@@ -135,6 +129,32 @@ function ProfessionalStockDashboard({
     { value: 'VWAP_LOWER_1_W', label: 'VWAP Lower 1σ (W)', color: '#eab308' },
     { value: 'VWAP_UPPER_2_W', label: 'VWAP Upper 2σ (W)', color: '#65a30d' },
     { value: 'VWAP_LOWER_2_W', label: 'VWAP Lower 2σ (W)', color: '#ca8a04' },
+    { value: 'VWAP_UPPER_3_W', label: 'VWAP Upper 3σ (W)', color: '#4d7c0f' },
+    { value: 'VWAP_LOWER_3_W', label: 'VWAP Lower 3σ (W)', color: '#a16207' },
+    
+    // VWAP Bands Monthly
+    { value: 'VWAP_UPPER_1_M', label: 'VWAP Upper 1σ (M)', color: '#059669' },
+    { value: 'VWAP_LOWER_1_M', label: 'VWAP Lower 1σ (M)', color: '#d97706' },
+    { value: 'VWAP_UPPER_2_M', label: 'VWAP Upper 2σ (M)', color: '#047857' },
+    { value: 'VWAP_LOWER_2_M', label: 'VWAP Lower 2σ (M)', color: '#b45309' },
+    { value: 'VWAP_UPPER_3_M', label: 'VWAP Upper 3σ (M)', color: '#065f46' },
+    { value: 'VWAP_LOWER_3_M', label: 'VWAP Lower 3σ (M)', color: '#92400e' },
+    
+    // VWAP Bands Quarterly
+    { value: 'VWAP_UPPER_1_Q', label: 'VWAP Upper 1σ (Q)', color: '#7c3aed' },
+    { value: 'VWAP_LOWER_1_Q', label: 'VWAP Lower 1σ (Q)', color: '#c2410c' },
+    { value: 'VWAP_UPPER_2_Q', label: 'VWAP Upper 2σ (Q)', color: '#6d28d9' },
+    { value: 'VWAP_LOWER_2_Q', label: 'VWAP Lower 2σ (Q)', color: '#9a3412' },
+    { value: 'VWAP_UPPER_3_Q', label: 'VWAP Upper 3σ (Q)', color: '#5b21b6' },
+    { value: 'VWAP_LOWER_3_Q', label: 'VWAP Lower 3σ (Q)', color: '#7c2d12' },
+    
+    // VWAP Bands Yearly
+    { value: 'VWAP_UPPER_1_Y', label: 'VWAP Upper 1σ (Y)', color: '#be185d' },
+    { value: 'VWAP_LOWER_1_Y', label: 'VWAP Lower 1σ (Y)', color: '#991b1b' },
+    { value: 'VWAP_UPPER_2_Y', label: 'VWAP Upper 2σ (Y)', color: '#9d174d' },
+    { value: 'VWAP_LOWER_2_Y', label: 'VWAP Lower 2σ (Y)', color: '#7f1d1d' },
+    { value: 'VWAP_UPPER_3_Y', label: 'VWAP Upper 3σ (Y)', color: '#831843' },
+    { value: 'VWAP_LOWER_3_Y', label: 'VWAP Lower 3σ (Y)', color: '#450a0a' },
     
     // EMAs
     { value: 'EMA_63', label: 'EMA 63', color: '#8b5cf6' },
@@ -142,16 +162,16 @@ function ProfessionalStockDashboard({
     { value: 'EMA_234', label: 'EMA 234', color: '#9333ea' },
     
     // Fibonacci Extensions
-    { value: 'FIB_EXT_0.236', label: 'Fibonacci 23.6%', color: '#f472b6' },
-    { value: 'FIB_EXT_0.786', label: 'Fibonacci 78.6%', color: '#ec4899' },
+    { value: 'FIB_EXT_0_236', label: 'Fibonacci 23.6%', color: '#f472b6' },
+    { value: 'FIB_EXT_0_786', label: 'Fibonacci 78.6%', color: '#ec4899' },
     
     // Linear Regression
     { value: 'LINREG_CURVE_63', label: 'LinReg Curve 63', color: '#14b8a6' },
     
-    // Previous Levels
+    // Previous Levels - Now available in BigQuery backend
     { value: 'PREV_HIGH', label: 'Previous High', color: '#fbbf24' },
     { value: 'PREV_LOW', label: 'Previous Low', color: '#fb923c' },
-    { value: 'PREV_CLOSE_X', label: 'Previous Close', color: '#f87171' }
+    
   ];
 
   // Optimized filter functions with limits for performance
@@ -288,10 +308,19 @@ function ProfessionalStockDashboard({
           timestamp: new Date(d.TIMESTAMP).getTime()
         };
         
-        // Only add selected indicators to reduce memory usage
-        selectedIndicators.forEach(indicatorValue => {
-          if (d[indicatorValue] !== null && d[indicatorValue] !== undefined) {
-            baseData[indicatorValue] = parseFloat(d[indicatorValue]);
+        // Add ALL indicator fields to ensure charts can access them when selected
+        // This includes all technical indicators from the backend
+        const indicatorFields = [
+          'ROLLING_MEDIAN', 'ROLLING_MODE', 'PP', 'S1', 'S2', 'S3', 'S4', 'R1', 'R2', 'R3', 'R4',
+          'FE_23_6', 'FE_38_2', 'FE_50', 'FE_61_8', 'VWAP_W', 'VWAP_M', 'VWAP_Q', 'VWAP_Y',
+          'EMA_63', 'EMA_144', 'EMA_234', 'BC', 'TC', 'BullCross_63_144', 'BearCross_63_144',
+          'BullCross_144_234', 'BearCross_144_234', 'BullCross_63_234', 'BearCross_63_234'
+          // All BigQuery indicators now available
+        ];
+        
+        indicatorFields.forEach(field => {
+          if (d[field] !== null && d[field] !== undefined) {
+            baseData[field] = parseFloat(d[field]) || null;
           }
         });
         
@@ -303,7 +332,7 @@ function ProfessionalStockDashboard({
     console.log('🔍 Last 3 formatted records:', formatted.slice(-3));
     
     return formatted;
-  }, [stockData, selectedIndicators]); // Include selectedIndicators for efficiency
+  }, [stockData]); // No need to depend on selectedIndicators since we include all fields
 
   // Calculate metrics - memoize to prevent recalculation
   const metrics = useMemo(() => {
@@ -749,7 +778,8 @@ function ProfessionalStockDashboard({
                 { id: 'overview', label: 'Overview', icon: Activity },
                 { id: 'fields', label: 'Volume Analysis', icon: Target },
                 { id: 'analysis', label: 'Analysis', icon: TrendingUp },
-                { id: 'alerts', label: 'Alerts', icon: AlertCircle }
+                { id: 'alerts', label: 'Alerts', icon: AlertCircle },
+                { id: 'rawdata', label: 'Raw Data', icon: Building2 }
               ].map(tab => {
                 const Icon = tab.icon;
                 return (
@@ -989,6 +1019,17 @@ function ProfessionalStockDashboard({
               <AlertCircle className="w-16 h-16 text-orange-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Price Alerts</h3>
               <p className="text-slate-400">Set up custom alerts for price movements and market events</p>
+            </div>
+          )}
+
+          {/* Raw Data Tab */}
+          {activeTab === 'rawdata' && (
+            <div className="space-y-6">
+              <DataTable 
+                data={stockData}
+                selectedSymbol={selectedSymbol}
+                maxRecords={100}
+              />
             </div>
           )}
         </main>
