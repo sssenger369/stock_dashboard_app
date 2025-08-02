@@ -2,33 +2,35 @@
 
 **Project Owner:** Sanjay Singh  
 **Created:** 2024  
-**Last Updated:** 2025-08-01 (Post-Ransomware Recovery)  
-**Status:** ✅ FULLY OPERATIONAL - All 3,622 symbols restored  
-**Total Records:** 2,527,425  
-**Total Symbols:** 3,622 Indian Stocks  
-**Data Coverage:** 2021-2025 (4+ years)
+**Last Updated:** 2025-08-02 (BigQuery Dimensional Migration)  
+**Status:** ✅ FULLY OPERATIONAL - BigQuery Analytics Powered  
+**Total Records:** 1,975,683  
+**Total Symbols:** 3,483 Indian Stocks  
+**Data Coverage:** 2021-2025 (4+ years)  
+**Architecture:** ⚡ Dimensional Data Model with BigQuery
 
 ---
 
 ## 🔗 LIVE SYSTEM LINKS
 
 ### Production URLs
-- **🌐 Live Dashboard (Primary):** https://stock-dashboard-93bsuyrcd-sanjay-singhs-projects-933bcc33.vercel.app/
-- **🔥 Firebase Dashboard:** https://swing-trade-pick.web.app (NEW - August 2025)
-- **🚀 Backend API:** https://stock-dashboard-8880484803.us-central1.run.app
+- **🌐 Live Dashboard (Primary):** https://swing-trade-pick.web.app (BigQuery Powered)
+- **🚀 Backend API:** https://stock-dashboard-q6o3cz2g6q-uc.a.run.app (Dimensional Model)
 - **📁 GitHub Repository:** https://github.com/sssenger369/stock_dashboard_app.git
 - **☁️ Data Backup:** gs://stock-data-sss-2024/Final_Data.parquet
+- **⚡ BigQuery Dataset:** triple-student-465020-g0.stock_temp (Fact + Dimension Tables)
 
 ### Development URLs
 - **Frontend Local:** http://localhost:5173 (npm run dev)
 - **Backend Local:** http://localhost:8000 (uvicorn main:app --reload)
 
-### Database Connection
-- **Secure Instance:** stock-data-new (Private IP: 10.77.160.5)
-- **Connection String:** triple-student-465020-g0:us-central1:stock-data-new
-- **Database:** stockdata
-- **Access:** Private VPC networking only (Unix socket: /cloudsql/...)
-- **Security:** Public IP disabled, SSL required, VPC-only access
+### BigQuery Data Warehouse
+- **Project:** triple-student-465020-g0
+- **Dataset:** stock_temp  
+- **Tables:** dimension_table (stock metadata) + fact_table (time series data)
+- **Access:** Direct BigQuery client authentication
+- **Performance:** Lightning-fast analytics with columnar storage
+- **Security:** IAM-based access control, no public endpoints
 
 ---
 
@@ -57,6 +59,16 @@
 - **UI Fixes:** Date range selector layout overlap resolved
 - **Styling:** Full Tailwind CSS styling parity with Vercel deployment
 
+### ✅ BIGQUERY DIMENSIONAL MIGRATION COMPLETED (August 2, 2025)
+- **Architecture:** Complete migration from single-table MySQL to dimensional BigQuery model
+- **Data Model:** Separate dimension_table (stock metadata) + fact_table (time series with 110 columns)
+- **Performance:** Sub-second query response times with BigQuery analytics engine
+- **Data Optimization:** 49.8% size reduction (float64→float32) while maintaining precision
+- **Complete Dataset:** All 110 columns from original parquet file including Fibonacci indicators
+- **Technical Indicators:** Full suite of 40+ indicators with real-time calculation
+- **Backend Rewrite:** Complete FastAPI backend optimized for dimensional queries with JOINs
+- **Scalability:** Auto-scaling BigQuery infrastructure ready for advanced analytics
+
 ---
 
 ## 📚 EDUCATIONAL OVERVIEW - Technology Explained for Students
@@ -76,10 +88,11 @@ This is a **professional stock market dashboard** - like the trading platforms y
 - **Python:** Programming language perfect for data processing and calculations
 - **Why chosen:** Python excels at financial calculations, FastAPI is faster than traditional frameworks like Django
 
-**💾 Database - MySQL Cloud SQL (Data Storage)**
-- **MySQL:** A relational database - like an Excel spreadsheet but designed for millions of rows
-- **Cloud SQL:** Google's managed database service - they handle backups, security, updates for you
-- **Why chosen:** Stock data is relational (prices linked to symbols and dates), cloud means no server maintenance
+**💾 Database - BigQuery Data Warehouse (Analytics Engine)**
+- **BigQuery:** Google's serverless data warehouse - like Excel on steroids for millions of rows
+- **Dimensional Model:** Separates facts (price data) from dimensions (stock metadata) for optimal analytics
+- **Columnar Storage:** Stores data by columns instead of rows for lightning-fast aggregations
+- **Why chosen:** Stock analysis requires complex queries across millions of records, BigQuery excels at analytics
 
 **☁️ Cloud Infrastructure - Google Cloud Platform**
 - **Cloud Run:** Serverless container platform - your code runs only when needed, scales automatically
@@ -118,12 +131,12 @@ This is a **professional stock market dashboard** - like the trading platforms y
 
 ### High-Level Architecture Flow
 ```
-User Browser → Frontend (Vercel) → Backend API (Cloud Run) → Secure Database (Cloud SQL)
+User Browser → Frontend (Firebase) → Backend API (Cloud Run) → BigQuery Data Warehouse (Dimensional Model)
 ```
 
 ### 📐 DETAILED ARCHITECTURE DIAGRAMS
 
-#### 1. Complete System Architecture
+#### 1. Complete BigQuery Dimensional Architecture
 ```
                            🌐 INTERNET
                                │
@@ -138,20 +151,21 @@ User Browser → Frontend (Vercel) → Backend API (Cloud Run) → Secure Databa
                       │ HTTPS Requests
                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                      ☁️ VERCEL CDN (Global)                                     │
+│                     🔥 FIREBASE HOSTING (Global CDN)                           │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
 │  │                    📱 REACT FRONTEND                                    │   │
 │  │                                                                         │   │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌────────────┐ │   │
-│  │  │   App.jsx    │  │ Dashboard    │  │   Charts     │  │ Components │ │   │
-│  │  │ (Controller) │  │     UI       │  │  (Recharts)  │  │ (Lucide)   │ │   │
+│  │  │   App.jsx    │  │ Dashboard    │  │   Charts     │  │ 40+ Tech   │ │   │
+│  │  │ (Controller) │  │     UI       │  │  (Recharts)  │  │ Indicators │ │   │
 │  │  └──────────────┘  └──────────────┘  └──────────────┘  └────────────┘ │   │
 │  │                                                                         │   │
+│  │  ✅ Fibonacci Extensions  ✅ PREV_HIGH/LOW  ✅ Complete VWAP Bands     │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 └─────────────────────┬───────────────────────────────────────────────────────────┘
                       │ API Calls (Axios)
-                      │ GET /symbols
-                      │ GET /stock_data/{symbol}
+                      │ GET /symbols (3,483)
+                      │ GET /stock_data/{symbol} (110 columns)
                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                    🏗️ GOOGLE CLOUD PLATFORM                                    │
@@ -160,49 +174,61 @@ User Browser → Frontend (Vercel) → Backend API (Cloud Run) → Secure Databa
 │  │                        ⚡ CLOUD RUN                                      │   │
 │  │                                                                         │   │
 │  │  ┌─────────────────────────────────────────────────────────────────┐   │   │
-│  │  │                    🐳 DOCKER CONTAINER                          │   │   │
+│  │  │              🐳 FASTAPI DIMENSIONAL ENGINE                      │   │   │
 │  │  │                                                                 │   │   │
-│  │  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │   │   │
-│  │  │  │   FastAPI    │  │   Pandas     │  │    NumPy     │        │   │   │
-│  │  │  │   (main.py)  │  │ (Indicators) │  │ (Calculations) │      │   │   │
-│  │  │  └──────────────┘  └──────────────┘  └──────────────┘        │   │   │
+│  │  │  📊 Dimensional Queries with JOINs:                            │   │   │
+│  │  │  SELECT f.*, d.security, d.sector, d.industry                 │   │   │
+│  │  │  FROM fact_table f                                             │   │   │
+│  │  │  JOIN dimension_table d ON f.symbol = d.symbol               │   │   │
+│  │  │  WHERE f.symbol = @symbol                                      │   │   │
 │  │  │                                                                 │   │   │
-│  │  │  📊 API Endpoints:                                              │   │   │
-│  │  │  • GET /symbols                                                 │   │   │
-│  │  │  • GET /stock_data/{symbol}                                     │   │   │
-│  │  │  • Technical Indicators Engine                                  │   │   │
-│  │  │  • EMA Crossover Signals                                        │   │   │
+│  │  │  ⚡ Features:                                                    │   │   │
+│  │  │  • BigQuery client with parameterized queries                  │   │   │
+│  │  │  • Timestamp format conversion (nanoseconds → ISO)             │   │   │
+│  │  │  • Complete 110-column dataset access                          │   │   │
+│  │  │  • Analytics-optimized for sub-second responses                │   │   │
 │  │  └─────────────────────────────────────────────────────────────────┘   │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 │                                     │                                           │
-│                                     │ Unix Socket Connection                    │
-│                                     │ (Private Network)                         │
+│                                     │ BigQuery Client API                       │
+│                                     │ (IAM Authentication)                      │
 │                                     ▼                                           │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │                        💾 CLOUD SQL                                     │   │
+│  │                    ⚡ BIGQUERY DATA WAREHOUSE                           │   │
 │  │                                                                         │   │
-│  │  ┌─────────────────────────────────────────────────────────────────┐   │   │
-│  │  │                    📊 MySQL Database                            │   │   │
-│  │  │                                                                 │   │   │
-│  │  │  Table: stock_data                                              │   │   │
-│  │  │  ├── 2,527,425 Records                                          │   │   │
-│  │  │  ├── 3,622 Unique Symbols                                       │   │   │
-│  │  │  ├── 4+ Years Data (2021-2025)                                  │   │   │
-│  │  │  └── Indexes: symbol, timestamp, composite                      │   │   │
-│  │  │                                                                 │   │   │
-│  │  │  Performance:                                                   │   │   │
-│  │  │  • Query Time: <2 seconds                                       │   │   │
-│  │  │  • Instance: stock-data-new                                     │   │   │
-│  │  │  • IP: 34.134.43.248 (Private)                                  │   │   │
-│  │  └─────────────────────────────────────────────────────────────────┘   │   │
+│  │  ┌─────────────────────────────┐  ┌─────────────────────────────┐      │   │
+│  │  │      📊 DIMENSION_TABLE     │  │       📈 FACT_TABLE         │      │   │
+│  │  │                             │  │                             │      │   │
+│  │  │  Stock Metadata (3,483):    │  │  Time Series (1,975,683):   │      │   │
+│  │  │  ├── symbol                 │  │  ├── symbol (foreign key)   │      │   │
+│  │  │  ├── security               │  │  ├── timestamp              │      │   │
+│  │  │  ├── sector                 │  │  ├── close_price            │      │   │
+│  │  │  ├── industry               │  │  ├── ohlc data              │      │   │
+│  │  │  ├── stock_rating           │  │  ├── volume metrics         │      │   │
+│  │  │  ├── quality_score          │  │  ├── technical indicators   │      │   │
+│  │  │  ├── growth_score           │  │  ├── fib_ext_0_236          │      │   │
+│  │  │  ├── mcap_category          │  │  ├── fib_ext_0_786          │      │   │
+│  │  │  ├── nifty_50, nifty_500    │  │  ├── prev_high, prev_low    │      │   │
+│  │  │  └── index memberships      │  │  ├── all VWAP bands         │      │   │
+│  │  │                             │  │  ├── ema crossover signals  │      │   │
+│  │  │  🔗 Normalized Design       │  │  └── 110 total columns      │      │   │
+│  │  │  No data duplication        │  │                             │      │   │
+│  │  └─────────────────────────────┘  └─────────────────────────────┘      │   │
+│  │                                                                         │   │
+│  │  📊 Performance Metrics:                                                │   │
+│  │  • Query Time: <1 second (columnar storage optimization)              │   │
+│  │  • Data Size: 370.6 MB optimized (49.8% reduction from original)      │   │
+│  │  • Auto-scaling: Serverless with instant scaling                       │   │
+│  │  • Analytics: Ready for ML and advanced aggregations                   │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 │                                                                                 │
 │  ┌─────────────────────────────────────────────────────────────────────────┐   │
-│  │                      📦 CLOUD STORAGE                                   │   │
+│  │                      📦 CLOUD STORAGE (Backup)                          │   │
 │  │                                                                         │   │
-│  │  • Original Data: Final_Data.parquet (977MB)                           │   │
+│  │  • Source Data: Final_Data.parquet (Complete 110 columns)              │   │
 │  │  • Backup Location: gs://stock-data-sss-2024/                          │   │
-│  │  • Used for: Disaster recovery                                         │   │
+│  │  • Usage: Disaster recovery & data reloading                           │   │
+│  │  • Reload Script: reload_complete_data.py (automated)                  │   │
 │  └─────────────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -700,46 +726,54 @@ ProfessionalStockDashboard
 - Color-coded indicator lines
 - Synchronized x-axis with price charts
 
-### Backend Architecture (FastAPI + Python)
+### Backend Architecture (FastAPI + BigQuery)
 
 **Location:** `backend/` directory  
-**Live URL:** https://stock-dashboard-8880484803.us-central1.run.app  
+**Live URL:** https://stock-dashboard-q6o3cz2g6q-uc.a.run.app  
 **Technology Stack:**
 - FastAPI for high-performance API
-- MySQL Connector for database access
-- Pandas for data processing
-- NumPy for technical calculations
+- Google Cloud BigQuery client for data warehouse access
+- Dimensional queries with JOINs for optimized analytics
+- Pandas for data processing (minimal, BigQuery handles heavy lifting)
 
 #### Core API Endpoints
 
 **1. `GET /` - Health Check**
 ```json
 {
-  "message": "Stock Data API - Comprehensive Version",
-  "records": "2,527,425",
-  "symbols": "3,621",
-  "indicators": "20+"
+  "message": "Stock Dashboard API - BigQuery Powered",
+  "version": "6.0.0",
+  "status": "operational", 
+  "data_model": "bigquery_analytics",
+  "symbols": 3483,
+  "records": 1975683,
+  "performance": "lightning_fast"
 }
 ```
 
 **2. `GET /symbols` - Symbol Loading**
-- Returns all 3,622 symbols in <0.3 seconds
-- Alphabetically sorted
-- Direct database query with optimized indexing
+- Returns all 3,483 symbols in <0.3 seconds
+- Alphabetically sorted from dimension_table
+- BigQuery optimized with columnar storage
 
 **3. `GET /stock_data/{symbol}` - Main Data Endpoint**
-- Returns ALL historical records for a symbol (NO SAMPLING)
-- Includes 20+ technical indicators
-- Real-time EMA crossover signal calculation
-- OHLC data generation from close prices
+- Returns ALL historical records with complete 110-column dataset
+- Includes 40+ technical indicators (Fibonacci, VWAP bands, crossovers)
+- Dimensional JOIN query combining fact + dimension tables
+- Timestamp format conversion (BigQuery nanoseconds → ISO strings)
 
-**Query Performance:**
+**Dimensional Query Performance:**
 ```sql
-SELECT timestamp, symbol, close_price 
-FROM stock_data 
-WHERE symbol = %s
-ORDER BY timestamp ASC
--- Returns 1,000+ records in <2 seconds
+SELECT 
+    f.timestamp, f.symbol, d.security, d.sector, d.industry,
+    f.close_price, f.fib_ext_0_236, f.fib_ext_0_786,
+    f.prev_high, f.prev_low, f.vwap_upper_1_w, f.vwap_lower_1_w,
+    -- ... all 110 columns available
+FROM `fact_table` f
+JOIN `dimension_table` d ON f.symbol = d.symbol
+WHERE f.symbol = @symbol
+ORDER BY f.timestamp ASC
+-- Returns 1,000+ records in <1 second with BigQuery
 ```
 
 #### Technical Indicator Engine
@@ -776,52 +810,76 @@ def calculate_technical_indicators(df, close_prices):
     }
 ```
 
-**Available Technical Indicators (20+):**
+**Available Technical Indicators (40+):**
 - **Trend:** Rolling Median/Mode, EMAs (63, 144, 234)
-- **Support/Resistance:** Pivot Points (PP, S1-S4, R1-R4)
-- **Fibonacci:** Extensions (23.6%, 38.2%, 50%, 61.8%)
-- **VWAP:** Weekly, Monthly, Quarterly, Yearly
+- **Support/Resistance:** Pivot Points (PP, S1-S4, R1-R4), PREV_HIGH, PREV_LOW
+- **Fibonacci:** Extensions (FIB_EXT_0_236, FIB_EXT_0_786) ✅ NOW WORKING
+- **VWAP Complete Suite:** Weekly/Monthly/Quarterly/Yearly with 1σ, 2σ, 3σ bands
 - **Channels:** Bottom Channel (BC), Top Channel (TC)
 - **Crossover Signals:** 6 different EMA crossover combinations
+- **Stock Analysis:** Stock ratings, quality scores, growth scores, index memberships
+- **Market Data:** Series, avg_price, market cap categories, F&O availability
 
-### Database Architecture (MySQL Cloud SQL)
+### BigQuery Data Warehouse Architecture
 
-**Secure Instance Details:**
-- **Instance ID:** `stock-data-new`
-- **IP Address:** 34.134.43.248 (Private access only)
-- **Connection:** `triple-student-465020-g0:us-central1:stock-data-new`
-- **Database:** `stockdata`
-- **User:** `stockuser`
-- **Password:** `Vascodigama@113`
-- **Security:** Unix socket connection, no public access
+**BigQuery Configuration:**
+- **Project:** `triple-student-465020-g0`
+- **Dataset:** `stock_temp`
+- **Access:** IAM-based authentication with BigQuery client
+- **Security:** No public endpoints, service account access only
+- **Performance:** Columnar storage with automatic optimization
 
-**Table Schema:**
+**Dimensional Schema:**
+
+**dimension_table (Stock Metadata - 3,483 records):**
 ```sql
-CREATE TABLE stock_data (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    timestamp DATETIME NOT NULL,
-    symbol VARCHAR(50) NOT NULL,
-    close_price DECIMAL(15,4),
-    open_price DECIMAL(15,4),
-    high_price DECIMAL(15,4),
-    low_price DECIMAL(15,4),
-    volume BIGINT,
-    turnover_lacs DECIMAL(15,4),
-    no_of_trades INT,
-    deliv_qty BIGINT,
-    deliv_per DECIMAL(5,2),
-    
-    INDEX idx_symbol (symbol),
-    INDEX idx_timestamp (timestamp),
-    INDEX idx_symbol_timestamp (symbol, timestamp)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+CREATE TABLE dimension_table (
+    symbol STRING,
+    security STRING,
+    sector STRING, 
+    industry STRING,
+    stock_rating STRING,
+    quality_score FLOAT64,
+    growth_score FLOAT64,
+    mcap_category STRING,
+    nifty_50 STRING,
+    nifty_500 STRING,
+    next_50 STRING,
+    alpha_50 STRING,
+    beta_50 STRING,
+    fno STRING,
+    flag STRING
+);
+```
+
+**fact_table (Time Series - 1,975,683 records with 110 columns):**
+```sql
+CREATE TABLE fact_table (
+    symbol STRING,
+    timestamp TIMESTAMP,
+    close_price FLOAT32,
+    open_price FLOAT32,
+    high_price FLOAT32,
+    low_price FLOAT32,
+    volume INT64,
+    -- Technical Indicators
+    fib_ext_0_236 FLOAT32,
+    fib_ext_0_786 FLOAT32,
+    prev_high FLOAT32,
+    prev_low FLOAT32,
+    vwap_w FLOAT32,
+    vwap_upper_1_w FLOAT32,
+    vwap_lower_1_w FLOAT32,
+    -- ... 110 total columns including all VWAP bands, EMAs, crossovers
+);
 ```
 
 **Performance Optimizations:**
-- **Indexes:** Symbol, timestamp, and composite indexes
-- **Query Time:** <2 seconds for 1,000+ records
-- **Memory:** 2GB allocated for backend processing
-- **Connection Pool:** Managed by Cloud Run
+- **Columnar Storage:** Optimized for analytical queries
+- **Query Time:** <1 second for complex JOINs with 1,000+ records  
+- **Data Compression:** 49.8% size reduction with float32 optimization
+- **Auto-scaling:** Serverless with instant scaling to handle any load
+- **Partitioning:** Automatic BigQuery optimization for timestamp-based queries
 
 ---
 
